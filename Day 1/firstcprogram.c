@@ -14,7 +14,8 @@
 int main() {
 
     int x; 
-    int y;                         // x will be the value entered by the user
+    int y;   
+    int sum;                      // initia
     char s[100];                    // s is used to "pause" the console so it doesn't exit too quickly
 
     /* Ask for a number and print it out */
@@ -33,6 +34,10 @@ int main() {
     scanf("%d", &y);
     fgets(s,100,stdin);             // remove the \n left by scanf
     printf("You entered %d\n", y);
+
+    /* Calculate the sum of the two numbers and print it out */
+    sum = x + y;                   // calculate the sum of x and y
+    printf("The sum of %d and %d is %d\n", x, y, sum);  // print the result
 
     /* Pause the console so we can look at it before it vanishes */
     fgets(s,100,stdin);

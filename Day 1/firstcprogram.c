@@ -2,7 +2,7 @@
  *
  * This code will start you off.  Modify it as instructed in Homework 1.
  * 
- * Put your name here: Professor Shafer
+ * Put your name here: Sylfhen McLeod
  * CS-5008 Spring 2025
  */
 
@@ -30,4 +30,5 @@ int main() {
 
     /* Pause the console so we can look at it before it vanishes */
     fgets(s,100,stdin);
+    return 0;
 }

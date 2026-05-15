@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <string.h> // for string functions like strcspn
+
+
 int main() {
     char s[100];
     char t[100];

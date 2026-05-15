@@ -14,5 +14,7 @@ int main() {
     
     /* Remove the newline character that fgets stores */
     s[strcspn(s, "\n")] = 0;
+    
     printf("%s? That's a funny name!",s);
+    return 0;
 }

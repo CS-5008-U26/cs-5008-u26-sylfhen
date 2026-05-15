@@ -13,7 +13,8 @@
 
 int main() {
 
-    int x;                          // x will be the value entered by the user
+    int x; 
+    int y;                         // x will be the value entered by the user
     char s[100];                    // s is used to "pause" the console so it doesn't exit too quickly
 
     /* Ask for a number and print it out */
@@ -27,6 +28,11 @@ int main() {
        I would only put a comment on a line if it was hard to understand or required that you
        know something that is not entirely obvious by looking at the code.
     */
+    /* Requesting User to enter another number */
+    printf("Enter another number: ");
+    scanf("%d", &y);
+    fgets(s,100,stdin);             // remove the \n left by scanf
+    printf("You entered %d\n", y);
 
     /* Pause the console so we can look at it before it vanishes */
     fgets(s,100,stdin);

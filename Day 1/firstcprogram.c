@@ -3,7 +3,7 @@
  * This code will start you off.  Modify it as instructed in Homework 1.
  * 
  * Put your name here: Sylfhen McLeod
- * CS-5008 Spring 2025
+ * CS-5008 Spring 2026
  */
 
 /* Standard Libraries */
@@ -15,7 +15,7 @@ int main() {
 
     int x; 
     int y;   
-    int sum;                      // initia
+    int sum;                      // initialize sum
     char s[100];                    // s is used to "pause" the console so it doesn't exit too quickly
 
     /* Ask for a number and print it out */

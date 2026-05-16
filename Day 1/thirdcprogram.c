@@ -6,7 +6,8 @@
 int main() {
 
     int x; 
-    int y;   
+    int y;  
+    int z;                        // initialize z, for an additional number to be entered by the user
     int sum;                      // initialize sum
     char s[100];                    // s is used to "pause" the console so it doesn't exit too quickly
 
@@ -30,6 +31,16 @@ int main() {
     /* Calculate the sum of the two numbers and print it out */
     sum = x + y;                   // calculate the sum of x and y
     printf("The sum of %d and %d is %d\n", x, y, sum);  // print the result
+
+    /* Requesting User to enter a third number */
+    printf("Enter a third number: ");
+    scanf("%d", &z);
+    fgets(s,100,stdin);             
+    printf("You entered %d\n", z);
+
+    /* Calculate the sum of the three numbers and print it out */
+    sum = x + y + z;                   // calculate the sum of x, y, and z
+    printf("The sum of %d, %d, and %d is %d\n", x, y, z, sum);  
 
     /* Pause the console so we can look at it before it vanishes */
     fgets(s,100,stdin);

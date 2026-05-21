@@ -1,0 +1,1 @@
+/*Write a program to print the prime numbers up to 100.  Calculate them the simplest possible way, by trying to divide by every integer, starting with 2, that is less than the number itself.*/

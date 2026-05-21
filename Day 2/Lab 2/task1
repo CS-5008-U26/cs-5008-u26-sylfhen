@@ -1,9 +1,9 @@
+/*Takes in a number from the user and prints it*/
+
 #include <stdio.h>
-
-main () {
-    char s[100];
-
-
-
-    fgets(s,100,stdin);
+int main () {
+    int x;
+    int sum = 0; // initialize sum to 0
+    int remainder; // initialize remainder
+    return 0;
 }

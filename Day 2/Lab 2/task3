@@ -16,7 +16,6 @@ int main() {
         if (prime) {
             printf("%d\n", i); // print i if it is prime
         }
-        }
     }
     
     clock_t end = clock(); // end the timer

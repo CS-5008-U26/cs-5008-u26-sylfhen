@@ -1,1 +1,31 @@
 /*Write a program to print the prime numbers up to 100.  Calculate them the simplest possible way, by trying to divide by every integer, starting with 2, that is less than the number itself.*/
+#include <stdio.h>
+#include <time.h>
+
+int main() {
+    clock_t start = clock(); // start the timer
+    clock_t end = clock(); // end the timer
+ 
+    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC; // calculate the time taken
+    printf("Time taken: %f seconds\n", time_taken); // print the time
+
+
+    int is_prime(int n) { // function to check if a number is prime
+    if (n < 2) return 0; // numbers less than 2 are not prime
+    for (int i = 2; i < n; i++) { // check divisibility by all integers less than n
+        if (n % i == 0) return 0; // if n is divisible by any integer, it's not prime
+    }
+    return 1; // n is prime
+}
+for (int i = 0; i <= 100; i++) { // loop through numbers from 0 to 100
+    if (is_prime(i)) { // check if the number is prime
+        numbers[count] = i; // store the prime number in the array
+        count++; // increment the count of prime numbers found
+    }
+}
+printf("Prime numbers up to 100:\n");
+for (int i = 0; i < count; i++) { // loop through the array of prime numbers and print them
+    printf("%d\n", numbers[i]);
+}
+return 0;
+}

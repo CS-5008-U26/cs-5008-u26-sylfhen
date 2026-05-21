@@ -8,7 +8,7 @@ int main() {
     printf("2\n"); // print 2, the first prime number
     for (int i = 3; i <= 1000000; i += 2) { // check divisibility by all integers less than n
         int prime = 1; // assume i is prime until we find a divisor
-        int sqrt_i = (int)sqrt(i); // calculate the square root of i to optimize the inner loop
+        int sqrt_i = (int)sqrt((double)i); // calculate the square root of i to optimize the inner loop
         for (int j = 2; j <= sqrt_i; j++) { // check divisibility by integers from 2 to sqrt(i)
             if (i % j == 0) {
                 prime = 0; // set prime to 0 to indicate i is not prime

@@ -24,4 +24,4 @@ int main() {
     printf("Time taken: %f seconds\n", time_taken); // print the time
     return 0;
 
- 
+}

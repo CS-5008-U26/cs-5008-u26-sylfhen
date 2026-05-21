@@ -1,0 +1,25 @@
+#include <stdio.h>
+#include <time.h>
+
+int main() {
+    clock_t start = clock(); // start the timer
+    
+    for (int i = 2; i <= 100; i++) { // check divisibility by all integers less than n
+        int prime = 1; // assume i is prime until we find a divisor
+        for (int j = 2; j <= i / 2; j++) { // check divisibility by integers from 2 to i/2
+            if (i % j == 0) {
+                prime = 0; // set prime to 0 to indicate i is not prime
+                break; // exit the inner loop since we found a divisor
+            }
+        }
+        if (prime) {
+            printf("%d\n", i); // print i if it is prime
+        }
+    }
+    
+    clock_t end = clock(); // end the timer
+ 
+    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC; // calculate the time taken
+    printf("Time taken: %f seconds\n", time_taken); // print the time
+    return 0;
+}

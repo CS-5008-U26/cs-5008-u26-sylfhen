@@ -5,5 +5,17 @@ int main () {
     int x;
     int sum = 0; // initialize sum to 0
     int remainder; // initialize remainder
+    
+    printf("Enter a number: ");
+    scanf("%d", &x);
+    printf("You entered %d\n", x);
+
+    while (x > 0) { // loop until x is reduced to 0
+        remainder = x % 10; // get the last digit of x
+        sum += remainder; // add the last digit to sum
+        x /= 10; // remove the last digit from x
+    }
+    
+    printf("The sum of the digits is %d\n", sum);
     return 0;
 }

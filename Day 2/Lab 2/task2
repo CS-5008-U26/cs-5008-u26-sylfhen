@@ -3,7 +3,6 @@
 int main(){
     for (int i = 0; i <= 1500; i+= 63) { // loop from 0 to 1500
             printf("%4d\n", i); // print i right-justified in a column
-        }
     }
     return 0;   
- 
+}   

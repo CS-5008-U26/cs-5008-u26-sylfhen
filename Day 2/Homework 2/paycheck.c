@@ -19,7 +19,10 @@ float wages(float hourlyRate, float hours) {
 int main() {
     float hourlyRate;
     float hours;
-    
+
+/* Loop until the User enters a valid hourly rate and number of hours */
+    while (1) {
+        
     printf("Enter hourly rate: ");
     scanf("%f", &hourlyRate);
 

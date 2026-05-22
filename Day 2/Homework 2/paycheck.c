@@ -25,11 +25,11 @@ int main() {
         
         printf("Enter hourly rate: ");
         scanf("%f", &hourlyRate);
-        if (hourlyRate < 0) break; // exit the loop if the user enters a negative hourly rate
+        if (hourlyRate <= 0) break; // exit the loop if the user enters a negative hourly rate
         
         printf("Enter number of hours: ");
         scanf("%f", &hours);
-        if (hours < 0) break; // exit the loop if the user enters a negative number of hours
+        if (hours <= 0) break; // exit the loop if the user enters a negative number of hours
 
         printf("This is how much you are due to be paid: $%.2f\n", wages(hourlyRate, hours));
     }

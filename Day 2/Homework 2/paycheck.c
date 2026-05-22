@@ -17,8 +17,9 @@ float wages(float hourlyRate, float hours) {
 }
 
 int main() {
-    float hourlyRate, hours;
-
+    float hourlyRate;
+    float hours;
+    
     printf("Enter hourly rate: ");
     scanf("%f", &hourlyRate);
 

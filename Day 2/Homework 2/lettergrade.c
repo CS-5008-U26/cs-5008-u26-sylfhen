@@ -1,5 +1,9 @@
+/*This program asks for a number score from 1 to 10 and prints your letter grade*/
+
+/*Standard library for input and output*/
 #include <stdio.h>
 
+/* Function to convert a numeric grade to a letter grade */
 char LetterGrade(int number) {
     if (number < 1 || number > 10) {
         printf("Error! This is an Invalid Grade!\n");
@@ -19,6 +23,7 @@ char LetterGrade(int number) {
     }
 }
 
+/* Main function to execute the program */
 int main() {
     int number;
     printf("Enter your grade: ");

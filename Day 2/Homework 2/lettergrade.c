@@ -1,11 +1,9 @@
 #include <stdio.h>
 
 char LetterGrade(int number) {
-    printf("Enter your grade: ");
-    scanf("%d", &number);
-    
-    if(number < 1 || number > 10) {
-        printf("Error! This is an Invalid Grade!");
+    if (number < 1 || number > 10) {
+        printf("Error! This is an Invalid Grade!\n");
+        return 'I';          // defined return value for the error case
     } else if (number >= 9) {
         return 'A';
     } else if (number >= 8) {
@@ -15,15 +13,22 @@ char LetterGrade(int number) {
     } else if (number >= 6) {
         return 'D';
     } else if (number >= 4) {
-        return 'E';    
+        return 'E';
     } else {
         return 'F';
     }
 }
 
 int main() {
-    int number = 8;
+    int number;
+    printf("Enter your grade: ");
+    scanf("%d", &number);           // input collected here, once
+
     char grade = LetterGrade(number);
-    printf("The grade is: %c\n", grade); // Outputs: B
+
+    if (grade != 'I') {
+        printf("The grade is: %c\n", grade);
+    }
+
     return 0;
 }

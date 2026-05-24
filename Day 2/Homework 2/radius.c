@@ -15,8 +15,8 @@ int main() {
         return 1;
     }
 
-    /* Calculate area and round to nearest integer */
-    int area = (int)round(pi * radius * radius);
+    /* Calculate area to nearest integer */
+    int area = (int)(pi * radius * radius);
 
     /* Print result matching expected format */
     printf("For a circle of radius %d.0 the area is %d\n", radius, area);

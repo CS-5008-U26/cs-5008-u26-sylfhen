@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 /* Function to convert a numeric score (0-100) to a letter grade with +/- modifier */
+/*Void handles all the printing internally */
 void LetterGrade(int number) {
     /* Validate range */
     if (number < 0 || number > 100) {
@@ -10,7 +11,7 @@ void LetterGrade(int number) {
         return;
     }
 
-    /* Determine base letter grade */
+    /* Determining the letter grade */
     char letter;
     if (number <= 60) {
         letter = 'F';
@@ -25,6 +26,7 @@ void LetterGrade(int number) {
     }
 
     /* Scores of F get no modifier */
+    /*since passing grades only applies to (61-100)*/
     if (letter == 'F') {
         printf("Your grade is %c\n", letter);
         return;
@@ -35,6 +37,7 @@ void LetterGrade(int number) {
     char modifier;
     if (lastDigit >= 1 && lastDigit <= 3) {
         modifier = '-';
+    /*lastDigit == 0 maps to + matching 8,9,0 */    
     } else if (lastDigit >= 8 || lastDigit == 0) {
         modifier = '+';
     } else {

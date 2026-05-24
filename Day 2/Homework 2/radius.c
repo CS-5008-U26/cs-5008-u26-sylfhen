@@ -15,7 +15,7 @@ int main() {
         return 1;
     }
 
-    /* Calculate area to nearest integer */
+    /* Calculate & Truncate area to nearest integer */
     int area = (int)(pi * radius * radius);
 
     /* Print result matching expected format */

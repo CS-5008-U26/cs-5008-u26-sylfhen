@@ -13,7 +13,7 @@ int main() {
         return 1;
     }
 
-    /* Calculate coins using greedy approach */
+    /* Calculate coins */
     int quarters = cents / 25;
     cents %= 25;
 
@@ -51,6 +51,9 @@ int main() {
             printf(" and ");
     }
 
+    /*Ensuring there is a difference between singular and plural forms */
+    /*Placing and commas appropriately */
+    
     /* Dimes */
     if (dimes > 0) {
         printed++;

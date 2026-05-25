@@ -53,3 +53,19 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Homework 2 binaries
+cents
+lettergrade
+lettergrade2
+lettergradeswitch
+paycheck
+radius
+roman
+cents
+lettergrade
+lettergrade2
+lettergradeswitch
+paycheck
+radius
+roman

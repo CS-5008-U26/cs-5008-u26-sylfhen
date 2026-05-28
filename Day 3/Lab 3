@@ -1,0 +1,27 @@
+//This programme returns Harshad numbers. These are numbers
+//divisible by the sum of their digits
+
+#include <stdio.h>
+
+int isHarshad(int i){
+    int result = 0;
+    int temp = i;
+    while(temp > 0){
+        result += temp % 10;
+        temp /= 10;
+    }
+    return (i % result == 0);
+}
+   
+
+
+int main()
+{
+    
+    printf("Here is all of the Harshad numbers under 100\n");
+    for(int i = 1; i<100; i++){
+        if (isHarshad(i))
+        printf("%d\n", i);
+    }
+    return 0;
+}

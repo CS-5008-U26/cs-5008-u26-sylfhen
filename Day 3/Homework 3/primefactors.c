@@ -51,7 +51,7 @@ int main() {
 
     /* Numbers <= 1 do not have prime factorisations */
     if (num < 0) {
-        printf("Error: negative numbers are not supported\n");
+        printf("Error: negative numbers do not have prime factorisations\n");
     } else if (num == 0 || num == 1) {
         printf("Error: %lld has no prime factorisation\n", num);
     } else {

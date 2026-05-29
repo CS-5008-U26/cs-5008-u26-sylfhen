@@ -58,8 +58,7 @@ int main() {
             printf("0");
         }
         printf("%lld\n", result);
-    
-
+    }
     printf("Press Enter to exit...\n");
     fgets(s, 100, stdin);       // now actually waits for Enter
     return 0;

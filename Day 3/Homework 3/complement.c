@@ -33,7 +33,7 @@ int main() {
 
     /* Handle negative numbers and zero as special cases */
     if (nums < 0) {
-        printf("Error: negative numbers are not supported\n");
+        printf("Error: negative numbers are not included\n");
     } else if (nums == 0) {
         printf("The complement is 9\n");
     } else {

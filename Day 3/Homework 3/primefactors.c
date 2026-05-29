@@ -39,7 +39,7 @@ void primeFactors(long long num) {
 int main() {
     char s[100];
     long long num;
-
+/* Prompt the user for input and read an integer. Handle invalid input gracefully. */
     printf("Enter a number: ");
     if (scanf("%lld", &num) != 1) {
         printf("Invalid input\n");

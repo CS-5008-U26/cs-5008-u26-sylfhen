@@ -49,7 +49,7 @@ int main() {
 
     getchar();                  // consume leftover '\n' from scanf
 
-    /* Numbers <= 1 do not have prime factorisations */
+    /* Capturing edge cases where numbers do not have prime factorisations */
     if (num < 0) {
         printf("Error: negative numbers do not have prime factorisations\n");
     } else if (num == 0 || num == 1) {

@@ -11,9 +11,9 @@ void primeFactors(long long num) {
     int first = 1;
     long long originalNum = num;   // save original number before num gets divided down
 
-    printf("The prime factors of %lld are ", originalNum);  //passing originalNum as argument
+    printf("The prime factors of %lld: ", originalNum);  //passing originalNum as argument
 
-    /* Loop through to find prime factors starting from 2 */
+    /* Looping through to find prime factors but starting from 2 */
     for (long long i = 2; i * i <= num; i++) {
         while (num % i == 0) {
             if (!first) {
@@ -50,6 +50,7 @@ int main() {
     getchar();                  // consume leftover '\n' from scanf
 
     /* Capturing edge cases where numbers do not have prime factorisations */
+    /*Keep in mind we are only considering positive whole integers greater than 1 */
     if (num < 0) {
         printf("Error: negative numbers do not have prime factorisations\n");
     } else if (num == 0 || num == 1) {

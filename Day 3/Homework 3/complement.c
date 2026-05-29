@@ -5,9 +5,20 @@
 /* Recursively calling itself to complement the rest of nums           */
 /* then composing that result with 9 - digit                           */
 
+/*Counting the length of nums to prevent overflow*/ 
+int countDigits(long long nums) {
+    int count = 0;
+    while (nums != 0) {
+        nums /= 10;
+        count++;
+    }
+    return count;
+}
+
+
 /* Base Case: If nums is 0, the complement is 0. */
 /* If nums is negative, the function returns -1 to indicate an error. */
-int FindingComplement(int nums) {
+long long FindingComplement(long long nums) {
     if (nums == 0) {
         return 0;
     }
@@ -20,10 +31,10 @@ int FindingComplement(int nums) {
 
 int main() {
     char s[100];
-    int nums;
+    long long nums;
 /* Prompt the user for input and read an integer. Handle invalid input gracefully. */
     printf("Enter your number: ");
-    if (scanf("%d", &nums) != 1) {
+    if (scanf("%lld", &nums) != 1) {
         printf("Invalid input\n");
         fgets(s, 100, stdin);   // pause before closing on invalid input
         return 1;
@@ -35,10 +46,19 @@ int main() {
     if (nums < 0) {
         printf("Error: negative numbers are not included\n");
     } else if (nums == 0) {
-        printf("The complement is 9\n");
+        printf("The complement of 0 is 9\n");
     } else {
-        printf("The complement of %d is %d\n", nums, FindingComplement(nums));
-    }
+        long long result = FindingComplement(nums);
+        int numDigits = countDigits(nums);
+        int resultDigits = countDigits(result);
+        
+         /*Print any leading zeros if necessary*/   
+        printf("The complement of %lld is ", nums);
+        for (int i = 0; i < numDigits - resultDigits; i++) {
+            printf("0");
+        }
+        printf("%lld\n", result);
+    
 
     printf("Press Enter to exit...\n");
     fgets(s, 100, stdin);       // now actually waits for Enter

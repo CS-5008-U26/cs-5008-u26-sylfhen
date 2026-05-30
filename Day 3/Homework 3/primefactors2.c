@@ -31,6 +31,7 @@ void RecursivePrimeFactors(long long num, long long divisor, int first) {
             printf(" * ");
         }
         printf("%lld", divisor);
+        /* Recurse on the quotient to find further factors, but keep divisor the same to check for repeated factors */
         RecursivePrimeFactors((num / divisor), divisor, 0);
     } else {
         /* divisor does not divide num, try the next candidate */

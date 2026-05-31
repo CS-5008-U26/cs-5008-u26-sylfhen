@@ -44,7 +44,7 @@ int main() {
         fgets(s, 100, stdin);
         return 1;
     }
-
+/* Print the results for et(x) from 2 to n */
     printf("\nResults for et(x) from 2 to %d:\n", n);
     printf("----------------------------\n");
     for (int i = 2; i <= n; i++) {

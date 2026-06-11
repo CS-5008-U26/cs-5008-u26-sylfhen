@@ -16,6 +16,23 @@ void condition(char *in, char *out) {
     out[j] = '\0';
 }
 
+// Function to check if a string is a palindrome
+int palindrome(char *in) {
+    char conditioned[200];
+    condition(in, conditioned);
+    int left = 0;
+    int right = (int)strlen(conditioned) - 1;
+
+    while (left < right) {
+        if (conditioned[left] != conditioned[right]) {
+            return 0; // Not a palindrome
+        }
+        left++;
+        right--;
+    }
+    return 1; // Is a palindrome
+}
+
 
 
 int main() {

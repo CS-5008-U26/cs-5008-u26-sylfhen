@@ -16,10 +16,11 @@ while (inputBuffer[0] != '\n') {
 // read one line from the console into inputBuffer
     fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
-if (inputBuffer[0] != '\n') {
+    if (inputBuffer[0] != '\n') {
 
 // print inputBuffer onto the console
-    printf("%s", inputBuffer);
+        printf("%s", inputBuffer);
+        printf("%d", (int)strlen(inputBuffer));
 
 }
 

@@ -18,11 +18,11 @@ char *getNextField(char *start, char separator, char *out) {
         out[0] = '\0';
         return start;
     }
-
+/* Find the position of the next separator */
     char *sepPos = strchr(start, separator);
 
     if (sepPos == NULL) {
-        /* No separator found — copy the rest of the string */
+        /* No separator found copy the rest of the string */
         strcpy(out, start);
 
         /* Strip double-quotes if present */
@@ -60,13 +60,16 @@ int main(void) {
     fgets(filename, 1000, stdin);
     killNewline(filename);
 
+/* Open the specified file for reading */    
     FILE *file = fopen(filename, "r");
 
+/* Check if the file was opened successfully */    
     if (file == NULL) {
         printf("\nError opening file: %s\n", filename);
         return 1;
     }
 
+    /* Read each line from the file */
     while (fgets(buffer, 1000, file) != NULL) {
         killNewline(buffer);
 

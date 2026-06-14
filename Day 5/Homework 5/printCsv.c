@@ -19,20 +19,59 @@ void getNextField(char *start, char separator, char *out) {
     char *sepPos = strchr(start, separator);
     if (sepPos == NULL) {
         strcpy(out, start); // No separator found, copy the rest of the string
+    
+    /* Strip double-quotes if present */
+        int outLen = strlen(out);
+        if (outLen >= 2 && out[0] == '"' && out[outLen - 1] == '"') {
+            out[outLen - 1] = '\0';
+            memmove(out, out + 1, outLen - 1);
+        }
+        return start + strlen(start); // Return pointer to the end of the string
+        
     } else {
         size_t fieldLength = sepPos - start;
         strncpy(out, start, fieldLength);
         out[fieldLength] = '\0'; // Null-terminate the output string
     }
 
+    /* Strip double-quotes if present */
+        int outLen = strlen(out);
+        if (outLen >= 2 && out[0] == '"' && out[outLen - 1] == '"') {
+            out[outLen - 1] = '\0';
+            memmove(out, out + 1, outLen - 1);
+        }
+        return sepPos + 1; // Return pointer to the character after the separator
+    }
 
+int main(){
+    char filename[1000];
+    char buffer[1000];
+    char field[1000];
 
-int main()
-{
-    char s[100];
-    
-    fgets(s, 100, stdin);
-    killNewline(s);
+    printf("Enter the filename: ");
+    fgets(filename, 1000, stdin);
+    killNewline(filename);
+
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error opening file: %s\n", filename);
+        return 1;
+    }else {
+        while(fgets(buffer, 1000, file) != NULL) {
+            killNewline(buffer);
+            
+            printf(">%s<\n", buffer);
+
+            char *ptr = buffer;
+            while (*ptr != '\0') {
+                ptr = getNextField(ptr, ',', field);
+                if (*ptr != '\0') {
+                printf("   >%s<\n", field);
+            }
+        }
+        
+        fclose(file);
+    }
 
     return 0;
 }

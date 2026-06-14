@@ -65,7 +65,7 @@ int main(void) {
 
 /* Check if the file was opened successfully */    
     if (file == NULL) {
-        printf("Error opening file: %s\n", filename);
+        printf("Error opening the file: %s\n", filename);
         return 1;
     }
 

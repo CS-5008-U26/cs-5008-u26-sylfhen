@@ -1,9 +1,9 @@
-/*Standard Libraries*/
+/* Standard Libraries */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-/*Removing the trailing newline character from the input string*/
+/* Remove the trailing newline character from the input string */
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n') {
@@ -11,38 +11,45 @@ void killNewline(char *str) {
     }
 }
 
-/*Extract the next comma separated field from 'start' into 'out'*/
+/* Extract the next comma-separated field from 'start' into 'out' */
 char *getNextField(char *start, char separator, char *out) {
-    if(*start == '\0') {
+    /* No more fields */
+    if (*start == '\0') {
         out[0] = '\0';
         return start;
     }
+
     char *sepPos = strchr(start, separator);
+
     if (sepPos == NULL) {
-        strcpy(out, start); // No separator found, copy the rest of the string
-    
-    /* Strip double-quotes if present */
+        /* No separator found — copy the rest of the string */
+        strcpy(out, start);
+
+        /* Strip double-quotes if present */
         int outLen = strlen(out);
         if (outLen >= 2 && out[0] == '"' && out[outLen - 1] == '"') {
             out[outLen - 1] = '\0';
             memmove(out, out + 1, outLen - 1);
         }
-        return start + strlen(start); // Return pointer to the end of the string
-        
+
+        return start + strlen(start);
+
     } else {
+        /* Copy characters up to the separator */
         size_t fieldLength = sepPos - start;
         strncpy(out, start, fieldLength);
-        out[fieldLength] = '\0'; // Null-terminate the output string
-    }
+        out[fieldLength] = '\0';
 
-    /* Strip double-quotes if present */
+        /* Strip double-quotes if present */
         int outLen = strlen(out);
         if (outLen >= 2 && out[0] == '"' && out[outLen - 1] == '"') {
             out[outLen - 1] = '\0';
             memmove(out, out + 1, outLen - 1);
         }
-        return sepPos + 1; // Return pointer to the character after the separator
+
+        return sepPos + 1;
     }
+}
 
 int main(void) {
     char filename[1000];
@@ -54,29 +61,26 @@ int main(void) {
     killNewline(filename);
 
     FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("Error opening file: %s\n", filename);
-        return 1;
-    } else {
-        while (fgets(buffer, 1000, file) != NULL) {
-            killNewline(buffer);
-            
-            printf(">%s<\n", buffer);
 
-            char *ptr = buffer;
-            while (*ptr != '\0') {
-                ptr = getNextField(ptr, ',', field);
-                if (*ptr != '\0') {
-                    printf("   >%s<\n", field);
-                } else {
-                    printf("   >%s<\n", field);
-                    break;
-                }
-            }
+    if (file == NULL) {
+        printf("\nError opening file: %s\n", filename);
+        return 1;
+    }
+
+    while (fgets(buffer, 1000, file) != NULL) {
+        killNewline(buffer);
+
+        /* Print the full line */
+        printf(">%s<\n", buffer);
+
+        /* Print each field */
+        char *ptr = buffer;
+        while (*ptr != '\0') {
+            ptr = getNextField(ptr, ',', field);
+            printf("   >%s<\n", field);
         }
     }
 
     fclose(file);
-
     return 0;
 }

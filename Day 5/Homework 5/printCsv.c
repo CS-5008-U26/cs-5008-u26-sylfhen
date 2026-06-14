@@ -12,9 +12,10 @@ void killNewline(char *str) {
 }
 
 /*Extract the next comma separated field from 'start' into 'out'*/
-void getNextField(char *start, char separator, char *out) {
+char *getNextField(char *start, char separator, char *out) {
     if(*start == '\0') {
-        return NULL;
+        out[0] = '\0';
+        return start;
     }
     char *sepPos = strchr(start, separator);
     if (sepPos == NULL) {
@@ -43,7 +44,7 @@ void getNextField(char *start, char separator, char *out) {
         return sepPos + 1; // Return pointer to the character after the separator
     }
 
-int main(){
+int main(void) {
     char filename[1000];
     char buffer[1000];
     char field[1000];
@@ -56,8 +57,8 @@ int main(){
     if (file == NULL) {
         printf("Error opening file: %s\n", filename);
         return 1;
-    }else {
-        while(fgets(buffer, 1000, file) != NULL) {
+    } else {
+        while (fgets(buffer, 1000, file) != NULL) {
             killNewline(buffer);
             
             printf(">%s<\n", buffer);
@@ -66,12 +67,16 @@ int main(){
             while (*ptr != '\0') {
                 ptr = getNextField(ptr, ',', field);
                 if (*ptr != '\0') {
-                printf("   >%s<\n", field);
+                    printf("   >%s<\n", field);
+                } else {
+                    printf("   >%s<\n", field);
+                    break;
+                }
             }
         }
-        
-        fclose(file);
     }
+
+    fclose(file);
 
     return 0;
 }

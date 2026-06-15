@@ -1,3 +1,8 @@
+/* 
+ * printCsv.c
+ *
+ * Reads a CSV file and prints each line and its fields.
+ *
 /* Standard Libraries */
 #include <stdio.h>
 #include <string.h>

@@ -89,7 +89,7 @@ int main(void) {
         killNewline(buffer);
 
         char *ptr = buffer;
-        int fieldIndex = 0;
+        int fieldIndex = 1;
 
         char cityName[1000];
         double cityLatitude = 0.0;

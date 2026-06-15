@@ -2,7 +2,8 @@
  * cities.c
  *
  * Getting data about US cities from a CSV file.
- *
+ */
+
 /* Standard Libraries */
 #include <stdio.h>
 #include <string.h>
@@ -112,8 +113,7 @@ int main(void) {
 
             fieldIndex++;
         }
-        /* Debug: print each city's data */
-        printf("City: %s | Lat: %f | Pop: %d\n", cityName, cityLatitude, cityPopulation);
+    
 
         /*Update the total population*/
         populationTotal += cityPopulation;

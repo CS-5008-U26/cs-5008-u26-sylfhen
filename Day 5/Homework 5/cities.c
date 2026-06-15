@@ -112,6 +112,8 @@ int main(void) {
 
             fieldIndex++;
         }
+        /* Debug: print each city's data */
+        printf("City: %s | Lat: %f | Pop: %d\n", cityName, cityLatitude, cityPopulation);
 
         /*Update the total population*/
         populationTotal += cityPopulation;

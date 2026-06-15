@@ -62,16 +62,16 @@ int main(void) {
     char buffer[1000];
     char field[1000];
 
-    printf("Enter the filename: ");
+    printf("Enter the filepath: ");
     fgets(filename, 1000, stdin);
     killNewline(filename);
 
-/* Open the specified file for reading */    
+/* Open the specified filepath for reading */    
     FILE *file = fopen(filename, "r");
 
-/* Check if the file was opened successfully */    
+/* Check if the filepath was accessed successfully */    
     if (file == NULL) {
-        printf("Error opening the file: %s\n", filename);
+        printf("Error opening the filepath: %s\n", filename);
         return 1;
     }
 
@@ -80,6 +80,8 @@ int main(void) {
 
     /*initializing the required fields*/
     long populationTotal = 0;
+    /*Using a latitude which starts at -999.0 is less than any valid latitude,*/
+    /* But it will be replaced by the first city's latitude*/
     double latitude = -999.0;
     char mostNorthernCity[1000];
     mostNorthernCity[0] = '\0';
@@ -89,6 +91,7 @@ int main(void) {
     while (cityCount < 20 && fgets(buffer, 1000, file) != NULL) {
         killNewline(buffer);
 
+        /*Using fieldIndex 1 to start counting columns*/
         char *ptr = buffer;
         int fieldIndex = 1;
 
@@ -131,7 +134,7 @@ int main(void) {
     fclose(file);
 
     /*Print the results*/
-    printf("Total population: %ld\n", populationTotal);
+    printf("Sum of the population: %ld\n", populationTotal);
     printf("Most northern city is: %s\n", mostNorthernCity);
 
     return 0;

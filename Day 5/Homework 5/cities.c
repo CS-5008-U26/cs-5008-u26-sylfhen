@@ -74,21 +74,63 @@ int main(void) {
         return 1;
     }
 
-    /* Read each line from the file */
-    while (fgets(buffer, 1000, file) != NULL) {
+    /*Throw away the first line (column headers)*/
+    fgets(buffer, 1000, file);
+
+    /*initializing the required fields*/
+    long populationTotal = 0;
+    double latitude = 0.0;
+    char mostNorthernCity[1000];
+    mostNorthernCity[0] = '\0';
+
+    /*Process the next twenty (20) lines*/
+    int cityCount = 0;
+    while (cityCount < 20 && fgets(buffer, 1000, file) != NULL) {
         killNewline(buffer);
 
-        /* Print the full line */
-        printf(">%s<\n", buffer);
-
-        /* Print each field */
         char *ptr = buffer;
+        int fieldIndex = 0;
+
+        char cityName[1000];
+        double cityLatitude = 0.0;
+        int cityPopulation = 0;
+
+        /*Walk through each field, picking out columns 2, 7, and 9 */
         while (*ptr != '\0') {
             ptr = getNextField(ptr, ',', field);
-            printf("   >%s<\n", field);
+
+            if (fieldIndex == 2) {
+                /*ASCII city name*/
+                strncpy(cityName, field, 1000);
+            } else if (fieldIndex == 7) {
+                /*Latitude*/
+                cityLatitude = atof(field);
+            } else if (fieldIndex == 9) {
+                /*Population*/
+                cityPopulation = atoi(field);
+            }
+
+            fieldIndex++;
         }
+
+        /*Update the total population*/
+        populationTotal += cityPopulation;
+
+        /*Check if this city is the most northern*/
+        if (cityLatitude > latitude) {
+            latitude = cityLatitude;
+            strncpy(mostNorthernCity, cityName, 1000);
+        }
+
+        cityCount++;
     }
 
+    /*Close the file*/
     fclose(file);
+
+    /*Print the results*/
+    printf("Total population: %ld\n", populationTotal);
+    printf("Most northern city is: %s\n", mostNorthernCity);
+
     return 0;
 }

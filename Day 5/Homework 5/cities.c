@@ -79,7 +79,7 @@ int main(void) {
 
     /*initializing the required fields*/
     long populationTotal = 0;
-    double latitude = 0.0;
+    double latitude = -999.0;
     char mostNorthernCity[1000];
     mostNorthernCity[0] = '\0';
 

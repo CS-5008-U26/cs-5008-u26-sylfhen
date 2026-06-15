@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
     /*If a filepath is provided as a command line argument, use it */
     if (argc > 1) {
         /* Use the command line argument as the filepath */
+        /*argv[0] is the program name, argv[1] is the first argument*/
         strncpy(filename, argv[1], 1000);
     } else {
         /* Prompt the user for a filepath */

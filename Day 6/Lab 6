@@ -2,6 +2,7 @@
  * cities.c
  *
  * Getting data about US cities from a CSV file.
+ * Task 1B: stringToCity and readCityList functions.
  */
 
 /* Standard Libraries */
@@ -9,19 +10,16 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* Struct to store all 9 fields of a city record */
-typedef struct city_struct{
-    char field1[1000];
-    char field3[1000];
-    char field4[1000];
-    char field5[1000];
-    char field6[1000];
-    char name[1000];
+/* Struct to store city record fields */
+typedef struct city_struct {
+    char *name;
+    char *nameASCII;
     double latitude;
     double longitude;
     int population;
-} City;
+} city;
 
+/* Strip a trailing newline from str, if present */
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n') {
@@ -29,18 +27,23 @@ void killNewline(char *str) {
     }
 }
 
-/* Extract the next comma-separated field from 'start' into 'out' */
+/*
+ * getNextField
+ * Extract the next comma-separated field from 'start' into 'out'.
+ * Returns a pointer to the character just after the separator (or end of string).
+ */
 char *getNextField(char *start, char separator, char *out) {
     /* No more fields */
     if (*start == '\0') {
         out[0] = '\0';
         return start;
     }
-/* Find the position of the next separator */
+
+    /* Find the position of the next separator */
     char *sepPos = strchr(start, separator);
 
     if (sepPos == NULL) {
-        /* No separator found copy the rest of the string */
+        /* No separator found: copy the rest of the string */
         strcpy(out, start);
 
         /* Strip double-quotes if present */
@@ -51,7 +54,6 @@ char *getNextField(char *start, char separator, char *out) {
         }
 
         return start + strlen(start);
-
     } else {
         /* Copy characters up to the separator */
         size_t fieldLength = sepPos - start;
@@ -69,85 +71,131 @@ char *getNextField(char *start, char separator, char *out) {
     }
 }
 
-int main(void) {
-    char filename[1000];
-    char buffer[1000];
+/*
+ * stringToCity
+ * Parse one CSV line into a heap-allocated city struct.
+ * CSV column layout (1-indexed):
+ *   1: city name
+ *   2: city ASCII name
+ *   3: state name
+ *   4: state id
+ *   5: county name
+ *   6: county fips
+ *   7: latitude
+ *   8: longitude
+ *   9: population
+ *   (remaining columns ignored)
+ *
+ * All string fields are strdup'd onto the heap.
+ * The struct itself is malloc'd onto the heap.
+ * Returns a pointer to the new city, or NULL on failure.
+ */
+city *stringToCity(char *textLine) {
+    /* Allocate the struct on the heap */
+    city *c = (city *)malloc(sizeof(city));
+    if (c == NULL) {
+        fprintf(stderr, "malloc failed in stringToCity\n");
+        return NULL;
+    }
+
     char field[1000];
+    char *ptr = textLine;
+    int fieldIndex = 1;
 
-    printf("Enter the filepath: ");
-    fgets(filename, 1000, stdin);
-    killNewline(filename);
+    /* Walk through every comma-separated field */
+    while (*ptr != '\0') {
+        ptr = getNextField(ptr, ',', field);
 
-/* Open the specified filepath for reading */    
+        switch (fieldIndex) {
+            case 1:
+                c->name = strdup(field);
+                break;
+            case 2:
+                c->nameASCII = strdup(field);
+                break;
+            case 7:
+                c->latitude = atof(field);
+                break;
+            case 8:
+                c->longitude = atof(field);
+                break;
+            case 9:
+                c->population = atoi(field);
+                break;
+            default:
+                break;
+        }
+
+        fieldIndex++;
+    }
+
+    return c;
+}
+
+/*
+ * readCityList
+ * Open 'filename', discard the header line, then read the next 20 lines.
+ * For each line, call stringToCity to build a heap-allocated city struct.
+ * Returns a heap-allocated array of 20 city* pointers.
+ * The caller is responsible for freeing both the structs and the array.
+ */
+city **readCityList(char *filename) {
     FILE *file = fopen(filename, "r");
-
-/* Check if the filepath was accessed successfully */    
     if (file == NULL) {
-        printf("Error opening the filepath: %s\n", filename);
+        fprintf(stderr, "Error opening file: %s\n", filename);
+        return NULL;
+    }
+
+    /* Discard the header line */
+    char buffer[1000];
+    fgets(buffer, 1000, file);
+
+    /* Allocate the array of 20 city pointers on the heap */
+    city **cityArray = (city **)malloc(20 * sizeof(city *));
+    if (cityArray == NULL) {
+        fprintf(stderr, "malloc failed for cityArray\n");
+        fclose(file);
+        return NULL;
+    }
+
+    int count = 0;
+    while (count < 20 && fgets(buffer, 1000, file) != NULL) {
+        killNewline(buffer);
+        cityArray[count] = stringToCity(buffer);
+        count++;
+    }
+
+    fclose(file);
+    return cityArray;
+}
+
+int main(void) {
+    city **cityArray;
+
+    cityArray = readCityList("../../Resources/uscities.csv");
+    if (cityArray == NULL) {
+        fprintf(stderr, "Failed to read city list.\n");
         return 1;
     }
 
-    /*Throw away the first line (column headers)*/
-    fgets(buffer, 1000, file);
-
-    /*initializing the required fields*/
-    long populationTotal = 0;
-    /*Using a latitude which starts at -999.0 is less than any valid latitude,*/
-    /* But it will be replaced by the first city's latitude*/
-    double latitude = -999.0;
-    char mostNorthernCity[1000];
-    mostNorthernCity[0] = '\0';
-
-    /*Process the next twenty (20) lines*/
-    int cityCount = 0;
-    while (cityCount < 20 && fgets(buffer, 1000, file) != NULL) {
-        killNewline(buffer);
-
-        /*Using fieldIndex 1 to start counting columns*/
-        char *ptr = buffer;
-        int fieldIndex = 1;
-
-        char cityName[1000];
-        double cityLatitude = 0.0;
-        int cityPopulation = 0;
-
-        /*Walk through each field, picking out columns 2, 7, and 9 */
-        while (*ptr != '\0') {
-            ptr = getNextField(ptr, ',', field);
-
-            if (fieldIndex == 2) {
-                /*ASCII city name*/
-                strncpy(cityName, field, 1000);
-            } else if (fieldIndex == 7) {
-                /*Latitude*/
-                cityLatitude = atof(field);
-            } else if (fieldIndex == 9) {
-                /*Population*/
-                cityPopulation = atoi(field);
-            }
-
-            fieldIndex++;
+    /* Print name and population for each of the 20 cities */
+    printf("%-35s %s\n", "City", "Population");
+    printf("%-35s %s\n", "----", "----------");
+    for (int i = 0; i < 20; i++) {
+        if (cityArray[i] != NULL) {
+            printf("%-35s %d\n", cityArray[i]->nameASCII, cityArray[i]->population);
         }
-    
-
-        /*Update the total population*/
-        populationTotal += cityPopulation;
-
-        /*Check if this city is the most northern*/
-        if (cityLatitude > latitude) {
-            latitude = cityLatitude;
-            strncpy(mostNorthernCity, cityName, 1000);
-        }
-
-        cityCount++;
     }
 
-    /*Close the file*/
-    fclose(file);
-
-    /*Print the results*/
-    printf("Sum of the population: %ld\n", populationTotal);
-    printf("Most northern city is: %s\n", mostNorthernCity);
+    /* Free all heap memory */
+    for (int i = 0; i < 20; i++) {
+        if (cityArray[i] != NULL) {
+            free(cityArray[i]->name);
+            free(cityArray[i]->nameASCII);
+            free(cityArray[i]);
+        }
+    }
+    free(cityArray);
 
     return 0;
 }

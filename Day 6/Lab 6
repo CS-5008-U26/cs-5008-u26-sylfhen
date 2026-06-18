@@ -9,7 +9,19 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* Remove the trailing newline character from the input string */
+/* Struct to store all 9 fields of a city record */
+typedef struct city_struct{
+    char field1[1000];
+    char field3[1000];
+    char field4[1000];
+    char field5[1000];
+    char field6[1000];
+    char name[1000];
+    double latitude;
+    double longitude;
+    int population;
+} City;
+
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n') {

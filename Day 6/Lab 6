@@ -178,14 +178,51 @@ int main(void) {
         return 1;
     }
 
-    /* Print name and population for each of the 20 cities */
-    printf("%-35s %s\n", "City", "Population");
-    printf("%-35s %s\n", "----", "----------");
-    for (int i = 0; i < 20; i++) {
-        if (cityArray[i] != NULL) {
-            printf("%-35s %d\n", cityArray[i]->nameASCII, cityArray[i]->population);
+    /* Interactive lookup loop*/
+    char inputBuffer[1000];
+    while (1) {
+        printf("Enter a city name (or 'exit' to quit): ");
+
+        if (fgets(inputBuffer, 1000, stdin) == NULL) {
+            break;
+        }
+        
+        /*Check if inputBuffer is a new line (Just Enter) Exit*/
+        if ((inputBuffer[0] == '\n')) {
+            break;
+        }
+        /*If User chose outside the boundary of 1 and 20*/
+        if ((strcmp(inputBuffer, "1") < 0) || (strcmp(inputBuffer, "20") > 0)) {
+            printf("Please enter a number between 1 and 20.\n");
+            continue;
+        }
+        
+        killNewline(inputBuffer);
+
+        if (strcmp(inputBuffer, "exit") == 0) {
+            break;
+        }
+
+        int found = 0;
+        for (int i = 0; i < 20; i++) {
+            if (cityArray[i] != NULL && strcmp(cityArray[i]->name, inputBuffer) == 0) {
+                printf("City: %s\n", cityArray[i]->name);
+                printf("ASCII Name: %s\n", cityArray[i]->nameASCII);
+                printf("Latitude: %f\n", cityArray[i]->latitude);
+                printf("Longitude: %f\n", cityArray[i]->longitude);
+                printf("Population: %d\n", cityArray[i]->population);
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            printf("City '%s' not found in the list.\n", inputBuffer);
         }
     }
+
+
+
 
     /* Free all heap memory */
     for (int i = 0; i < 20; i++) {

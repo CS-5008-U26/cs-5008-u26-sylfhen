@@ -4,12 +4,13 @@
  * Reading Halloween Candy Rankings from a CSV file.
  */
 
+/* Standard Libraries */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
-/* Struct to store one candy's data (all on the heap via pointer) */
+/*  Struct to store candy record fields */
 typedef struct reading_struct {
     char *competitorname;
     int chocolate;
@@ -70,6 +71,7 @@ int main(void) {
     fgets(filename, 1000, stdin);
     killNewline(filename);
 
+    /* Open the CSV file for reading */
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         printf("Error opening the filepath: %s\n", filename);
@@ -78,6 +80,7 @@ int main(void) {
 
     fgets(buffer, 1000, file);
 
+    /* Initial capacity of the candy array; doubles automatically if exceeded */
     int capacity = 100;
     int count = 0;
     Candy **candies = malloc(capacity * sizeof(Candy *));
@@ -87,6 +90,7 @@ int main(void) {
         return 1;
     }
 
+    /* Read each line from the CSV file and parse it into a Candy struct */
     while (fgets(buffer, 1000, file) != NULL) {
         killNewline(buffer);
 

@@ -7,10 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
-/* Struct to store one candy's data (all on the heap via pointer) */
-typedef struct reading_struct{
-    char *competitorname;   /* heap-allocated string */
+/* Struct to store candy's data (all on the heap via pointer) */
+typedef struct reading_struct {
+    char *competitorname;
     int chocolate;
     int fruity;
     int caramel;
@@ -66,7 +67,6 @@ int main(void) {
     char buffer[1000];
     char field[1000];
 
-    /* Read filename from stdin (as required by the stub) */
     fgets(filename, 1000, stdin);
     killNewline(filename);
 
@@ -76,10 +76,8 @@ int main(void) {
         return 1;
     }
 
-    /* Discard the header line */
     fgets(buffer, 1000, file);
 
-    /* Dynamic array of Candy* pointers */
     int capacity = 100;
     int count = 0;
     Candy **candies = malloc(capacity * sizeof(Candy *));
@@ -89,11 +87,9 @@ int main(void) {
         return 1;
     }
 
-    /* Read each candy line */
     while (fgets(buffer, 1000, file) != NULL) {
         killNewline(buffer);
 
-        /* Allocate the struct on the heap */
         Candy *c = malloc(sizeof(Candy));
         if (c == NULL) {
             printf("Memory allocation failed.\n");
@@ -106,61 +102,31 @@ int main(void) {
         while (*ptr != '\0') {
             ptr = getNextField(ptr, ',', field);
             switch (fieldIndex) {
-            case 1:
-                c->competitorname = malloc(strlen(field) + 1);
-                if (c->competitorname == NULL) {
-                    printf("Memory allocation failed.\n");
-                    free(c);
-                    c = NULL;
+                case 1:
+                    c->competitorname = malloc(strlen(field) + 1);
+                    if (c->competitorname == NULL) {
+                        free(c); c = NULL; break;
+                    }
+                    strcpy(c->competitorname, field);
                     break;
-                }
-                strcpy(c->competitorname, field);
-                break;
-            case 2:
-                c->chocolate = atoi(field);
-                break;
-            case 3:
-                c->fruity = atoi(field);
-                break;
-            case 4:
-                c->caramel = atoi(field);
-                break;
-            case 5:
-                c->peanutalmondy = atoi(field);
-                break;
-            case 6:
-                c->nougat = atoi(field);
-                break;
-            case 7:
-                c->crispedricewafer = atoi(field);
-                break;
-            case 8:
-                c->hard = atoi(field);
-                break;
-            case 9:
-                c->bar = atoi(field);
-                break;
-            case 10:
-                c->pluribus = atoi(field);
-                break;
-            case 11:
-                c->sugarpercent = atof(field);
-                break;
-            case 12:
-                c->pricepercent = atof(field);
-                break;
-            case 13:
-                c->winpercent = atof(field);
-                break;
+                case 2:  c->chocolate        = atoi(field); break;
+                case 3:  c->fruity           = atoi(field); break;
+                case 4:  c->caramel          = atoi(field); break;
+                case 5:  c->peanutalmondy    = atoi(field); break;
+                case 6:  c->nougat           = atoi(field); break;
+                case 7:  c->crispedricewafer = atoi(field); break;
+                case 8:  c->hard             = atoi(field); break;
+                case 9:  c->bar              = atoi(field); break;
+                case 10: c->pluribus         = atoi(field); break;
+                case 11: c->sugarpercent     = atof(field); break;
+                case 12: c->pricepercent     = atof(field); break;
+                case 13: c->winpercent       = atof(field); break;
             }
             fieldIndex++;
         }
 
-        if (c == NULL) {
-            continue;
-        }
+        if (c == NULL) continue;
 
-        /* Grow array if needed */
         if (count == capacity) {
             capacity *= 2;
             Candy **tmp = realloc(candies, capacity * sizeof(Candy *));
@@ -177,13 +143,41 @@ int main(void) {
 
     fclose(file);
 
-    /* Print all candy names */
+    /* ── Task 1: Print all candy names ── */
     printf("All candies (%d total):\n", count);
     for (int i = 0; i < count; i++) {
         printf("%s\n", candies[i]->competitorname);
     }
 
-    /* Free all heap memory */
+    /* ── Task 2: Chocolate candies ── */
+    printf("\nChocolate candies (UPPER = has caramel, lower = no caramel):\n");
+    int chocCount   = 0;
+    int chocCaramel = 0;
+
+    for (int i = 0; i < count; i++) {
+        if (!candies[i]->chocolate) continue;
+        chocCount++;
+
+        /* Copy name into a local buffer to avoid modifying heap string */
+        char nameCopy[1000];
+        strncpy(nameCopy, candies[i]->competitorname, 999);
+        nameCopy[999] = '\0';
+
+        if (candies[i]->caramel) {
+            chocCaramel++;
+            for (int j = 0; nameCopy[j]; j++)
+                nameCopy[j] = toupper((unsigned char)nameCopy[j]);
+        } else {
+            for (int j = 0; nameCopy[j]; j++)
+                nameCopy[j] = tolower((unsigned char)nameCopy[j]);
+        }
+        printf("%s\n", nameCopy);
+    }
+
+    printf("Percent of chocolate candies that also have caramel: %.2f%%\n",
+           100.0 * chocCaramel / chocCount);
+
+    /* ── Free all heap memory ── */
     for (int i = 0; i < count; i++) {
         free(candies[i]->competitorname);
         free(candies[i]);

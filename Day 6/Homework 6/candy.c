@@ -231,7 +231,8 @@ int main(void) {
         "nougat", "crispedricewafer", "hard", "bar", "pluribus"
     };
 
-    printf("\nPer-attribute averages (sugar%%, price%%, win%%):\n");
+    /* Print the header for the averages table */
+    printf("\nPer-attribute averages as Percentiles (sugar%%, price%%, win%%):\n");
     printf("%-20s %10s %10s %10s\n", "Attribute", "AvgSugar", "AvgPrice", "AvgWin");
 
     /* Loop through each attribute and calculate averages for candies that have that attribute */
@@ -283,8 +284,8 @@ int main(void) {
         if (attrCount > 0) {
             printf("%-20s %10.4f %10.4f %10.4f\n",
                    attrNames[a],
-                   sumSugar / attrCount,
-                   sumPrice / attrCount,
+                   sumSugar / attrCount * 100,/* For consistency with percentile representation */
+                   sumPrice / attrCount * 100,/* For consistency with percentile representation */
                    sumWin   / attrCount);
         } else {
             printf("%-20s %10s %10s %10s\n", attrNames[a], "N/A", "N/A", "N/A");
@@ -324,10 +325,12 @@ int main(void) {
             n++;
         }
     }
-    printf("\nCandies above average sugar percent (avg sugar = %.4f, n = %d):\n", avgSugar, n);
+    printf("\nCandies above average sugar percent (avg sugar = %.4f, n = %d):\n", avgSugar * 100, n);
     if (n > 0) {
+        
+        /* Multiply by 100 for the percentile representation in the output */
         printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
-               sumS / n, sumP / n, sumW / n);
+               (sumS / n * 100), (sumP / n *100), sumW / n); 
     } else {
         printf("  No candies are above the average sugar percent.\n");
     }
@@ -345,10 +348,10 @@ int main(void) {
             n++;
         }
     }
-    printf("\nCandies above average price percent (avg price = %.4f, n = %d):\n", avgPrice, n);
+    printf("\nCandies above average price percent (avg price = %.4f, n = %d):\n", avgPrice * 100, n);
     if (n > 0) {
         printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
-               sumS / n, sumP / n, sumW / n);
+               (sumS / n * 100), (sumP / n * 100), sumW / n);
     } else {
         printf("  No candies are above the average price percent.\n");
     }

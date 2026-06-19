@@ -68,7 +68,10 @@ int main(void) {
     char buffer[1000];
     char field[1000];
 
-    fgets(filename, 1000, stdin);
+    if (fgets(filename, 1000, stdin) == NULL) {
+        printf("No input filename provided.\n");
+        return 1;
+    }
     killNewline(filename);
 
     /* Open the CSV file for reading */
@@ -78,7 +81,11 @@ int main(void) {
         return 1;
     }
 
-    fgets(buffer, 1000, file);
+    if (fgets(buffer, 1000, file) == NULL) {
+        printf("CSV file is empty.\n");
+        fclose(file);
+        return 1;
+    }
 
     /* Initial capacity of the candy array; doubles automatically if exceeded */
     int capacity = 100;
@@ -155,7 +162,8 @@ int main(void) {
             fieldIndex++;
         }
 
-        if (c == NULL) continue;
+        if (c == NULL) 
+            continue;
 
         if (count == capacity) {
             capacity *= 2;
@@ -173,27 +181,32 @@ int main(void) {
 
     fclose(file);
 
-    /* ── Task 1: Print all candy names ── */
+    /* Task 1: Print all candy names */
     printf("All candies (%d total):\n", count);
     for (int i = 0; i < count; i++) {
         printf("%s\n", candies[i]->competitorname);
     }
 
-    /* ── Task 2: Chocolate candies ── */
+    
+    /* Task 2: Print chocolate candies in uppercase if they have caramel, lowercase if not */
     printf("\nChocolate candies (UPPER = has caramel, lower = no caramel):\n");
-    int chocCount   = 0;
-    int chocCaramel = 0;
+    
+    /* Count how many chocolate candies also have caramel for the percentage calculation */
+    int countChoc   = 0;
+    int countCaramel = 0;
 
     for (int i = 0; i < count; i++) {
         if (!candies[i]->chocolate) continue;
-        chocCount++;
+        countChoc++;
 
+        /* Create a copy of the candy name to not modify the original for output */
         char nameCopy[1000];
+        /* Copy the name safely, ensuring null-termination */
         strncpy(nameCopy, candies[i]->competitorname, 999);
         nameCopy[999] = '\0';
 
         if (candies[i]->caramel) {
-            chocCaramel++;
+            countCaramel++;
             for (int j = 0; nameCopy[j]; j++) {
                 nameCopy[j] = toupper((unsigned char)nameCopy[j]);
             }
@@ -205,12 +218,14 @@ int main(void) {
         printf("%s\n", nameCopy);
     }
 
-    if (chocCount > 0) {
+    if (countChoc > 0) {
+        /* Multiply by 100.0 (not 100) to force floating-point division and get a true percentage */
         printf("Percent of chocolate candies that also have caramel: %.2f%%\n",
-               100.0 * chocCaramel / chocCount);
+               100.0 * countCaramel / countChoc);
     }
 
-    /* ── Task 3: Per-attribute averages ── */
+    /* Task 3: Per attribute averages */
+    /* Define the attribute names in the same order as they appear in the Candy struct */
     const char *attrNames[] = {
         "chocolate", "fruity", "caramel", "peanutalmondy",
         "nougat", "crispedricewafer", "hard", "bar", "pluribus"
@@ -219,8 +234,11 @@ int main(void) {
     printf("\nPer-attribute averages (sugar%%, price%%, win%%):\n");
     printf("%-20s %10s %10s %10s\n", "Attribute", "AvgSugar", "AvgPrice", "AvgWin");
 
+    /* Loop through each attribute and calculate averages for candies that have that attribute */
     for (int a = 0; a < 9; a++) {
-        double sumSugar = 0, sumPrice = 0, sumWin = 0;
+        double sumSugar = 0; 
+        double sumPrice = 0; 
+        double sumWin = 0;
         int    attrCount = 0;
 
         for (int i = 0; i < count; i++) {
@@ -273,17 +291,31 @@ int main(void) {
         }
     }
 
-    /* ── Task 3: Above-average sugar and price thresholds ── */
-    double totalSugar = 0, totalPrice = 0;
+    /* Task 3 continue: Above-average sugar and price thresholds */
+    /* First calculate the average sugar and price percentages across all candies for the threshold comparisons */
+    double totalSugar = 0; 
+    double totalPrice = 0;
     for (int i = 0; i < count; i++) {
         totalSugar += candies[i]->sugarpercent;
         totalPrice += candies[i]->pricepercent;
     }
+    if (count == 0) {
+        printf("No candy rows were parsed from the file.\n");
+        free(candies);
+        return 0;
+    }
+
+    /* Calculate the average sugar and price percentages */
     double avgSugar = totalSugar / count;
     double avgPrice = totalPrice / count;
 
-    double sumS = 0, sumP = 0, sumW = 0;
+    /* Calculate and print averages for candies above the average sugar percent */
+    double sumS = 0; 
+    double sumP = 0; 
+    double sumW = 0;
     int    n = 0;
+
+    /* Loop through candies to find those above the average sugar percent and sum their attributes */
     for (int i = 0; i < count; i++) {
         if (candies[i]->sugarpercent > avgSugar) {
             sumS += candies[i]->sugarpercent;
@@ -293,10 +325,18 @@ int main(void) {
         }
     }
     printf("\nCandies above average sugar percent (avg sugar = %.4f, n = %d):\n", avgSugar, n);
-    printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
-           sumS / n, sumP / n, sumW / n);
+    if (n > 0) {
+        printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
+               sumS / n, sumP / n, sumW / n);
+    } else {
+        printf("  No candies are above the average sugar percent.\n");
+    }
 
-    sumS = 0; sumP = 0; sumW = 0; n = 0;
+    /* Reset sums and count for the price threshold calculation */
+    sumS = 0; 
+    sumP = 0; 
+    sumW = 0; 
+    n = 0;
     for (int i = 0; i < count; i++) {
         if (candies[i]->pricepercent > avgPrice) {
             sumS += candies[i]->sugarpercent;
@@ -306,10 +346,14 @@ int main(void) {
         }
     }
     printf("\nCandies above average price percent (avg price = %.4f, n = %d):\n", avgPrice, n);
-    printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
-           sumS / n, sumP / n, sumW / n);
+    if (n > 0) {
+        printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
+               sumS / n, sumP / n, sumW / n);
+    } else {
+        printf("  No candies are above the average price percent.\n");
+    }
 
-    /* ── Free all heap memory ── */
+    /* Free all memory on the heap */
     for (int i = 0; i < count; i++) {
         free(candies[i]->competitorname);
         free(candies[i]);

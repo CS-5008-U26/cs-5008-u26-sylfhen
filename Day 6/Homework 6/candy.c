@@ -99,33 +99,64 @@ int main(void) {
         char *ptr = buffer;
         int fieldIndex = 1;
 
-        while (*ptr != '\0') {
+        while (*ptr) {
             ptr = getNextField(ptr, ',', field);
+
             switch (fieldIndex) {
-                case 1:
-                    c->competitorname = malloc(strlen(field) + 1);
-                    if (c->competitorname == NULL) {
-                        free(c); c = NULL; break;
-                    }
-                    strcpy(c->competitorname, field);
-                    break;
-                case 2:  c->chocolate        = atoi(field); break;
-                case 3:  c->fruity           = atoi(field); break;
-                case 4:  c->caramel          = atoi(field); break;
-                case 5:  c->peanutalmondy    = atoi(field); break;
-                case 6:  c->nougat           = atoi(field); break;
-                case 7:  c->crispedricewafer = atoi(field); break;
-                case 8:  c->hard             = atoi(field); break;
-                case 9:  c->bar              = atoi(field); break;
-                case 10: c->pluribus         = atoi(field); break;
-                case 11: c->sugarpercent     = atof(field); break;
-                case 12: c->pricepercent     = atof(field); break;
-                case 13: c->winpercent       = atof(field); break;
+            case 1:
+                c->competitorname = strdup(field);
+                if (c->competitorname == NULL) {
+                    printf("Memory allocation failed.\n");
+                    free(c);
+                    c = NULL;
+                }
+                break;
+            case 2:
+                c->chocolate = atoi(field);
+                break;
+            case 3:
+                c->fruity = atoi(field);
+                break;
+            case 4:
+                c->caramel = atoi(field);
+                break;
+            case 5:
+                c->peanutalmondy = atoi(field);
+                break;
+            case 6:
+                c->nougat = atoi(field);
+                break;
+            case 7:
+                c->crispedricewafer = atoi(field);
+                break;
+            case 8:
+                c->hard = atoi(field);
+                break;
+            case 9:
+                c->bar = atoi(field);
+                break;
+            case 10:
+                c->pluribus = atoi(field);
+                break;
+            case 11:
+                c->sugarpercent = atof(field);
+                break;
+            case 12:
+                c->pricepercent = atof(field);
+                break;
+            case 13:
+                c->winpercent = atof(field);
+                break;
+            default:
+                break;
             }
+
             fieldIndex++;
         }
 
-        if (c == NULL) continue;
+
+        if (c == NULL) 
+            continue;
 
         if (count == capacity) {
             capacity *= 2;

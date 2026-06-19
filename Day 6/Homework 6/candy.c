@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-/* Struct to store candy's data (all on the heap via pointer) */
+/* Struct to store one candy's data (all on the heap via pointer) */
 typedef struct reading_struct {
     char *competitorname;
     int chocolate;
@@ -99,64 +99,59 @@ int main(void) {
         char *ptr = buffer;
         int fieldIndex = 1;
 
-        while (*ptr) {
+        while (*ptr != '\0') {
             ptr = getNextField(ptr, ',', field);
-
             switch (fieldIndex) {
-            case 1:
-                c->competitorname = strdup(field);
-                if (c->competitorname == NULL) {
-                    printf("Memory allocation failed.\n");
-                    free(c);
-                    c = NULL;
-                }
-                break;
-            case 2:
-                c->chocolate = atoi(field);
-                break;
-            case 3:
-                c->fruity = atoi(field);
-                break;
-            case 4:
-                c->caramel = atoi(field);
-                break;
-            case 5:
-                c->peanutalmondy = atoi(field);
-                break;
-            case 6:
-                c->nougat = atoi(field);
-                break;
-            case 7:
-                c->crispedricewafer = atoi(field);
-                break;
-            case 8:
-                c->hard = atoi(field);
-                break;
-            case 9:
-                c->bar = atoi(field);
-                break;
-            case 10:
-                c->pluribus = atoi(field);
-                break;
-            case 11:
-                c->sugarpercent = atof(field);
-                break;
-            case 12:
-                c->pricepercent = atof(field);
-                break;
-            case 13:
-                c->winpercent = atof(field);
-                break;
-            default:
-                break;
+                case 1:
+                    c->competitorname = malloc(strlen(field) + 1);
+                    if (c->competitorname == NULL) {
+                        free(c);
+                        c = NULL;
+                        break;
+                    }
+                    strcpy(c->competitorname, field);
+                    break;
+                case 2:
+                    c->chocolate = atoi(field);
+                    break;
+                case 3:
+                    c->fruity = atoi(field);
+                    break;
+                case 4:
+                    c->caramel = atoi(field);
+                    break;
+                case 5:
+                    c->peanutalmondy = atoi(field);
+                    break;
+                case 6:
+                    c->nougat = atoi(field);
+                    break;
+                case 7:
+                    c->crispedricewafer = atoi(field);
+                    break;
+                case 8:
+                    c->hard = atoi(field);
+                    break;
+                case 9:
+                    c->bar = atoi(field);
+                    break;
+                case 10:
+                    c->pluribus = atoi(field);
+                    break;
+                case 11:
+                    c->sugarpercent = atof(field);
+                    break;
+                case 12:
+                    c->pricepercent = atof(field);
+                    break;
+                case 13:
+                    c->winpercent = atof(field);
+                    break;
             }
-
             fieldIndex++;
         }
 
-
-        if (c == NULL) 
-            continue;
+        if (c == NULL) continue;
 
         if (count == capacity) {
             capacity *= 2;
@@ -189,24 +184,126 @@ int main(void) {
         if (!candies[i]->chocolate) continue;
         chocCount++;
 
-        /* Copy name into a local buffer to avoid modifying heap string */
         char nameCopy[1000];
         strncpy(nameCopy, candies[i]->competitorname, 999);
         nameCopy[999] = '\0';
 
         if (candies[i]->caramel) {
             chocCaramel++;
-            for (int j = 0; nameCopy[j]; j++)
+            for (int j = 0; nameCopy[j]; j++) {
                 nameCopy[j] = toupper((unsigned char)nameCopy[j]);
+            }
         } else {
-            for (int j = 0; nameCopy[j]; j++)
+            for (int j = 0; nameCopy[j]; j++) {
                 nameCopy[j] = tolower((unsigned char)nameCopy[j]);
+            }
         }
         printf("%s\n", nameCopy);
     }
 
-    printf("Percent of chocolate candies that also have caramel: %.2f%%\n",
-           100.0 * chocCaramel / chocCount);
+    if (chocCount > 0) {
+        printf("Percent of chocolate candies that also have caramel: %.2f%%\n",
+               100.0 * chocCaramel / chocCount);
+    }
+
+    /* ── Task 3: Per-attribute averages ── */
+    const char *attrNames[] = {
+        "chocolate", "fruity", "caramel", "peanutalmondy",
+        "nougat", "crispedricewafer", "hard", "bar", "pluribus"
+    };
+
+    printf("\nPer-attribute averages (sugar%%, price%%, win%%):\n");
+    printf("%-20s %10s %10s %10s\n", "Attribute", "AvgSugar", "AvgPrice", "AvgWin");
+
+    for (int a = 0; a < 9; a++) {
+        double sumSugar = 0, sumPrice = 0, sumWin = 0;
+        int    attrCount = 0;
+
+        for (int i = 0; i < count; i++) {
+            int hasAttr = 0;
+            switch (a) {
+                case 0:
+                    hasAttr = candies[i]->chocolate;
+                    break;
+                case 1:
+                    hasAttr = candies[i]->fruity;
+                    break;
+                case 2:
+                    hasAttr = candies[i]->caramel;
+                    break;
+                case 3:
+                    hasAttr = candies[i]->peanutalmondy;
+                    break;
+                case 4:
+                    hasAttr = candies[i]->nougat;
+                    break;
+                case 5:
+                    hasAttr = candies[i]->crispedricewafer;
+                    break;
+                case 6:
+                    hasAttr = candies[i]->hard;
+                    break;
+                case 7:
+                    hasAttr = candies[i]->bar;
+                    break;
+                case 8:
+                    hasAttr = candies[i]->pluribus;
+                    break;
+            }
+            if (hasAttr) {
+                sumSugar += candies[i]->sugarpercent;
+                sumPrice += candies[i]->pricepercent;
+                sumWin   += candies[i]->winpercent;
+                attrCount++;
+            }
+        }
+
+        if (attrCount > 0) {
+            printf("%-20s %10.4f %10.4f %10.4f\n",
+                   attrNames[a],
+                   sumSugar / attrCount,
+                   sumPrice / attrCount,
+                   sumWin   / attrCount);
+        } else {
+            printf("%-20s %10s %10s %10s\n", attrNames[a], "N/A", "N/A", "N/A");
+        }
+    }
+
+    /* ── Task 3: Above-average sugar and price thresholds ── */
+    double totalSugar = 0, totalPrice = 0;
+    for (int i = 0; i < count; i++) {
+        totalSugar += candies[i]->sugarpercent;
+        totalPrice += candies[i]->pricepercent;
+    }
+    double avgSugar = totalSugar / count;
+    double avgPrice = totalPrice / count;
+
+    double sumS = 0, sumP = 0, sumW = 0;
+    int    n = 0;
+    for (int i = 0; i < count; i++) {
+        if (candies[i]->sugarpercent > avgSugar) {
+            sumS += candies[i]->sugarpercent;
+            sumP += candies[i]->pricepercent;
+            sumW += candies[i]->winpercent;
+            n++;
+        }
+    }
+    printf("\nCandies above average sugar percent (avg sugar = %.4f, n = %d):\n", avgSugar, n);
+    printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
+           sumS / n, sumP / n, sumW / n);
+
+    sumS = 0; sumP = 0; sumW = 0; n = 0;
+    for (int i = 0; i < count; i++) {
+        if (candies[i]->pricepercent > avgPrice) {
+            sumS += candies[i]->sugarpercent;
+            sumP += candies[i]->pricepercent;
+            sumW += candies[i]->winpercent;
+            n++;
+        }
+    }
+    printf("\nCandies above average price percent (avg price = %.4f, n = %d):\n", avgPrice, n);
+    printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
+           sumS / n, sumP / n, sumW / n);
 
     /* ── Free all heap memory ── */
     for (int i = 0; i < count; i++) {

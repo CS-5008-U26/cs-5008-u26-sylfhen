@@ -106,30 +106,71 @@ int main(void) {
         while (*ptr != '\0') {
             ptr = getNextField(ptr, ',', field);
             switch (fieldIndex) {
-                case 1:
-                    c->competitorname = malloc(strlen(field) + 1);
-                    strcpy(c->competitorname, field);
+            case 1:
+                c->competitorname = malloc(strlen(field) + 1);
+                if (c->competitorname == NULL) {
+                    printf("Memory allocation failed.\n");
+                    free(c);
+                    c = NULL;
                     break;
-                case 2:  c->chocolate        = atoi(field); break;
-                case 3:  c->fruity           = atoi(field); break;
-                case 4:  c->caramel          = atoi(field); break;
-                case 5:  c->peanutalmondy    = atoi(field); break;
-                case 6:  c->nougat           = atoi(field); break;
-                case 7:  c->crispedricewafer = atoi(field); break;
-                case 8:  c->hard             = atoi(field); break;
-                case 9:  c->bar              = atoi(field); break;
-                case 10: c->pluribus         = atoi(field); break;
-                case 11: c->sugarpercent     = atof(field); break;
-                case 12: c->pricepercent     = atof(field); break;
-                case 13: c->winpercent       = atof(field); break;
+                }
+                strcpy(c->competitorname, field);
+                break;
+            case 2:
+                c->chocolate = atoi(field);
+                break;
+            case 3:
+                c->fruity = atoi(field);
+                break;
+            case 4:
+                c->caramel = atoi(field);
+                break;
+            case 5:
+                c->peanutalmondy = atoi(field);
+                break;
+            case 6:
+                c->nougat = atoi(field);
+                break;
+            case 7:
+                c->crispedricewafer = atoi(field);
+                break;
+            case 8:
+                c->hard = atoi(field);
+                break;
+            case 9:
+                c->bar = atoi(field);
+                break;
+            case 10:
+                c->pluribus = atoi(field);
+                break;
+            case 11:
+                c->sugarpercent = atof(field);
+                break;
+            case 12:
+                c->pricepercent = atof(field);
+                break;
+            case 13:
+                c->winpercent = atof(field);
+                break;
             }
             fieldIndex++;
+        }
+
+        if (c == NULL) {
+            continue;
         }
 
         /* Grow array if needed */
         if (count == capacity) {
             capacity *= 2;
-            candies = realloc(candies, capacity * sizeof(Candy *));
+            Candy **tmp = realloc(candies, capacity * sizeof(Candy *));
+            if (tmp == NULL) {
+                printf("Memory allocation failed.\n");
+                free(c->competitorname);
+                free(c);
+                break;
+            }
+            candies = tmp;
         }
         candies[count++] = c;
     }

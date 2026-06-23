@@ -64,6 +64,7 @@ char *getNextField(char *start, char separator, char *out) {
 }
 
 int main(void) {
+    /* Buffer to hold the filename and lines read from the CSV file */
     char filename[1000];
     char buffer[1000];
     char field[1000];
@@ -101,12 +102,14 @@ int main(void) {
     while (fgets(buffer, 1000, file) != NULL) {
         killNewline(buffer);
 
+        /* Allocate memory for a new Candy struct */
         Candy *c = malloc(sizeof(Candy));
         if (c == NULL) {
             printf("Memory allocation failed.\n");
             break;
         }
 
+        
         char *ptr = buffer;
         int fieldIndex = 1;
 

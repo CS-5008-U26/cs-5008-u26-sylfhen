@@ -297,6 +297,7 @@ int main(void) {
 
     /* Task 3 continue: Above-average sugar and price thresholds */
     /* First calculate the average sugar and price percentages across all candies for the threshold comparisons */
+    /* It's a segmentation analysis—showing how the average qualities differ when you filter by one attribute threshold */
     double totalSugar = 0; 
     double totalPrice = 0;
     for (int i = 0; i < count; i++) {
@@ -328,10 +329,11 @@ int main(void) {
             n++;
         }
     }
+    /* Print the results for candies above the average sugar percent */ 
     printf("\nCandies above average sugar percent (avg sugar = %.4f, n = %d):\n", avgSugar * 100, n);
     if (n > 0) {
         
-        /* Multiply by 100 for the percentile representation in the output */
+        /* Multiply by 100 for the percentage representation in the output */
         printf("  Avg sugar%%: %.4f  Avg price%%: %.4f  Avg win%%: %.4f\n",
                (sumS / n * 100), (sumP / n *100), sumW / n); 
     } else {

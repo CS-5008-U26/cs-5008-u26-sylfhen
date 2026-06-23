@@ -235,7 +235,7 @@ int main(void) {
     };
 
     /* Print the header for the averages table */
-    printf("\nPer-attribute averages as Percentiles (sugar%%, price%%, win%%):\n");
+    printf("\nPer-attribute averages as Percentages (sugar%%, price%%, win%%):\n");
     printf("%-20s %10s %10s %10s\n", "Attribute", "AvgSugar", "AvgPrice", "AvgWin");
 
     /* Loop through each attribute and calculate averages for candies that have that attribute */
@@ -287,8 +287,8 @@ int main(void) {
         if (attrCount > 0) {
             printf("%-20s %10.4f %10.4f %10.4f\n",
                    attrNames[a],
-                   sumSugar / attrCount * 100,/* For consistency with percentile representation */
-                   sumPrice / attrCount * 100,/* For consistency with percentile representation */
+                   sumSugar / attrCount * 100,/* For consistency with percentage representation */
+                   sumPrice / attrCount * 100,/* For consistency with percentage representation */
                    sumWin   / attrCount);
         } else {
             printf("%-20s %10s %10s %10s\n", attrNames[a], "N/A", "N/A", "N/A");

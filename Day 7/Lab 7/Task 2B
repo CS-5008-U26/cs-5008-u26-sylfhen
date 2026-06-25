@@ -1,0 +1,126 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+/* Linked list node */
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
+
+/* Create a new node */
+Node* createNode(int val) {
+    Node* n = (Node*)malloc(sizeof(Node));
+    n->data = val;
+    n->next = NULL;
+    return n;
+}
+
+/* Append to linked list */
+void append(Node** head, int val) {
+    Node* newNode = createNode(val);
+
+    if (*head == NULL) {
+        *head = newNode;
+        return;
+    }
+
+    Node* temp = *head;
+    while (temp->next != NULL)
+        temp = temp->next;
+
+    temp->next = newNode;
+}
+
+/* Check if number is prime */
+int isPrime(int n) {
+    if (n < 2) return 0;
+
+    for (int i = 2; i * i <= n; i++) {
+        if (n % i == 0)
+            return 0;
+    }
+    return 1;
+}
+
+/* Get first and second digit */
+int firstDigit(int n) {
+    while (n >= 10)
+        n /= 10;
+    return n;
+}
+
+int secondDigit(int n) {
+    while (n >= 100)
+        n /= 10;
+    return (n / 10) % 10;
+}
+
+/* Print list */
+void printList(Node* head) {
+    while (head != NULL) {
+        printf("%d -> ", head->data);
+        head = head->next;
+    }
+    printf("NULL\n");
+}
+
+/* Reverse linked list (Task 2B) */
+Node* reverseList(Node* head) {
+    Node* prev = NULL;
+    Node* curr = head;
+    Node* next = NULL;
+
+    while (curr != NULL) {
+        next = curr->next;
+        curr->next = prev;
+        prev = curr;
+        curr = next;
+    }
+
+    return prev;
+}
+
+int main() {
+
+    Node* primes = NULL;
+    Node* filtered = NULL;
+
+    /* Step 1: generate first 100 primes */
+    int count = 0;
+    int num = 2;
+
+    while (count < 100) {
+        if (isPrime(num)) {
+            append(&primes, num);
+            count++;
+        }
+        num++;
+    }
+
+    /* Step 2: filter primes where second digit > first digit */
+    Node* temp = primes;
+
+    while (temp != NULL) {
+        int n = temp->data;
+
+        if (n >= 10) {
+            int fd = firstDigit(n);
+            int sd = secondDigit(n);
+
+            if (sd > fd) {
+                append(&filtered, n);
+            }
+        }
+
+        temp = temp->next;
+    }
+
+    /* Step 3: reverse the filtered list */
+    Node* reversed = reverseList(filtered);
+
+    /* Step 4: print result */
+    printf("Reversed filtered prime list:\n");
+    printList(reversed);
+
+    return 0;
+}

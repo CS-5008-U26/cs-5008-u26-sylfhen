@@ -14,10 +14,10 @@ int main() {
     while (1) {
 
         int prime = 1;
-        long long int limit = (long long int)sqrt((double)num);
+        long long int timelimit = (long long int)sqrt((double)num);
 
         /*d is the divisor we are checking */
-        for (long long int d = 2; d <= limit; d++) {
+        for (long long int d = 2; d <= timelimit; d++) {
             if (num % d == 0) {
                 prime = 0;
                 break;

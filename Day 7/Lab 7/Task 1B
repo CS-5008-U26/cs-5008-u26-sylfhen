@@ -16,7 +16,7 @@ node *createNode(int x) {
     node *newNode = malloc(sizeof(node));
 
     if (newNode == NULL) {
-        printf("Memory allocation failed\n");
+        printf("Memory allocation has failed\n");
         exit(1);
     }
 

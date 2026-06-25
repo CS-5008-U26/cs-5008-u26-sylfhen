@@ -1,0 +1,92 @@
+/* Task 1C */
+/* Generating Primes for 0.5 seconds using a linked list */
+/* New primes are inserted at the END of the list */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+
+typedef struct Node {
+    long long prime;
+    struct Node *next;
+} Node;
+
+int main() {
+
+    clock_t start = clock();
+
+    Node *primes = NULL;
+
+    /* First prime */
+    Node *first = malloc(sizeof(Node));
+    first->prime = 2;
+    first->next = NULL;
+    primes = first;
+
+    long long num = 3;
+    long long lastPrime = 2;
+
+    while (1) {
+
+        int isPrime = 1;
+        long long limit = (long long)sqrt((double)num);
+
+        /* Test divisibility using previously found primes */
+        Node *curr = primes;
+
+        while (curr != NULL && curr->prime <= limit) {
+
+            if (num % curr->prime == 0) {
+                isPrime = 0;
+                break;
+            }
+
+            curr = curr->next;
+        }
+
+        if (isPrime) {
+
+            lastPrime = num;
+
+            /* Create new node */
+            Node *newNode = malloc(sizeof(Node));
+            newNode->prime = num;
+            newNode->next = NULL;
+
+            /* insertLast */
+            if (primes == NULL) {
+                primes = newNode;
+            }
+            else {
+                Node *temp = primes;
+
+                while (temp->next != NULL)
+                    temp = temp->next;
+
+                temp->next = newNode;
+            }
+
+            clock_t now = clock();
+            double elapsed =
+                (double)(now - start) / CLOCKS_PER_SEC;
+
+            if (elapsed >= 0.5)
+                break;
+        }
+
+        num += 2; /* Skip even numbers */
+    }
+
+    printf("Last prime found in 0.5 seconds: %lld\n", lastPrime);
+
+    /* Free memory */
+    Node *curr = primes;
+    while (curr != NULL) {
+        Node *next = curr->next;
+        free(curr);
+        curr = next;
+    }
+
+    return 0;
+}

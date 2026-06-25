@@ -16,6 +16,7 @@ int main() {
         int prime = 1;
         long long int limit = (long long int)sqrt((double)num);
 
+        /*d is the divisor we are checking */
         for (long long int d = 2; d <= limit; d++) {
             if (num % d == 0) {
                 prime = 0;

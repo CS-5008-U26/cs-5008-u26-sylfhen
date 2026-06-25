@@ -9,7 +9,7 @@ int main() {
     clock_t start = clock();
 
     long long int num = 2;/* Start checking for primes from 2 */
-    long long int lastPrime = 2;
+    long long int lastPrime = 2;/*intialize starts at 2 since 2 is the first prime*/
 
     while (1) {
 

@@ -29,11 +29,15 @@ node *createNode(int x) {
 int main() {
 
     clock_t start = clock();
+    /*double timeLimit = 0.5;*/
 
     /* List of primes */
     node *primes = NULL;
 
     /* Insert first prime (2) */
+    /*node *head = createNode((int)lastPrime)*/
+    /*head->next = primes*/
+    /*primes = head;*/
     primes = createNode(2);
 
     long long int num = 3;

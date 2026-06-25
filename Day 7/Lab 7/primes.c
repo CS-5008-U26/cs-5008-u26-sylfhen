@@ -38,7 +38,7 @@ int main() {
                 break;
         }
 
-        num++;
+        num+2;
     }
 
     printf("Last prime found: %lld\n", lastPrime);

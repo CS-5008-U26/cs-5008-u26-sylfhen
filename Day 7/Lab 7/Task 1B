@@ -41,7 +41,7 @@ int main() {
 
     while (1) {
 
-        int prime = 1;
+        int isprime = 1;
         long long int limit =
             (long long int)sqrt((double)num);
 
@@ -56,14 +56,14 @@ int main() {
                 break;
 
             if (num % p == 0) {
-                prime = 0;
+                isprime = 0;
                 break;
             }
 
             current = current->next;
         }
 
-        if (prime) {
+        if (isprime) {
 
             lastPrime = num;
 

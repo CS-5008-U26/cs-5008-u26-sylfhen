@@ -1,0 +1,100 @@
+/* Task 1B */
+/* Generate primes for 0.5 seconds using a linked list of primes */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+
+typedef struct intNode {
+    int value;
+    struct intNode *next;
+} node;
+
+/* Create a new node */
+node *createNode(int x) {
+    node *newNode = malloc(sizeof(node));
+
+    if (newNode == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    newNode->value = x;
+    newNode->next = NULL;
+
+    return newNode;
+}
+
+int main() {
+
+    clock_t start = clock();
+
+    /* List of primes */
+    node *primes = NULL;
+
+    /* Insert first prime (2) */
+    primes = createNode(2);
+
+    long long int num = 3;
+    long long int lastPrime = 2;
+
+    while (1) {
+
+        int prime = 1;
+        long long int limit =
+            (long long int)sqrt((double)num);
+
+        /* Check divisibility using ONLY known primes */
+        node *current = primes;
+
+        while (current != NULL) {
+
+            int p = current->value;
+
+            if (p > limit)
+                break;
+
+            if (num % p == 0) {
+                prime = 0;
+                break;
+            }
+
+            current = current->next;
+        }
+
+        if (prime) {
+
+            lastPrime = num;
+
+            /* Add new prime to front of list */
+            node *newNode = createNode((int)num);
+            newNode->next = primes;
+            primes = newNode;
+
+            clock_t now = clock();
+
+            double elapsed =
+                (double)(now - start) / CLOCKS_PER_SEC;
+
+            if (elapsed >= 0.5)
+                break;
+        }
+
+        num += 2; /* Skip even numbers */
+    }
+
+    printf("Last prime found in 0.5 seconds: %lld\n",
+           lastPrime);
+
+    /* Free the linked list */
+    node *current = primes;
+
+    while (current != NULL) {
+        node *temp = current;
+        current = current->next;
+        free(temp);
+    }
+
+    return 0;
+}

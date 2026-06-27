@@ -6,24 +6,36 @@
 #include <string.h>
 #include <sys/types.h>
 
-/* Struct to store city record fields */
+/*
+ * Struct to store city record fields.
+ * name, state_id, and population.
+ * nameASCII is kept because the CSV column order requires us to
+ * parse past it to reach state_id.
+ */
 typedef struct city {
     char *name;
     char *nameASCII;
+    char *stateID;
+    long  population;
 } city;
 
-/* Strip a trailing newline from str, if present */
+/*
+ * Strip trailing newline (and carriage return) from str.
+ * We check for \r after \n to handle both Unix (\n) and
+ * Windows (\r\n) line endings, preventing field corruption.
+ */
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n')
         str[--len] = '\0';
-    /* Also strip \r to handle Windows-style CRLF line endings. */
     if (len > 0 && str[len - 1] == '\r')
         str[--len] = '\0';
 }
 
-/* Extract the next comma-separated field from 'start' into 'out'.
- * Returns a pointer to the character just after the separator (or end of string).
+/*
+ * Remove surrounding double-quotes from a field string, in place.
+ * The CSV standard wraps fields containing commas in quotes;
+ * we strip them so callers receive clean values.
  */
 static void stripEnclosingQuotes(char *field) {
     size_t len = strlen(field);
@@ -33,44 +45,64 @@ static void stripEnclosingQuotes(char *field) {
     }
 }
 
+/*
+ * Extract the next separator-delimited field from 'start' into 'out'.
+ * Tracks whether we are inside quotes so that commas within a quoted
+ * field (e.g. the zip-codes column) are not treated as separators.
+ * Returns a pointer to the character just after the separator,
+ * or to the end of the string if no separator was found.
+ */
 static char *getNextField(char *start, char separator, char *out) {
     if (*start == '\0') {
         out[0] = '\0';
         return start;
     }
 
-    int inQuotes = 0;
-    char *cursor = start;
-    char *write = out;
+    int   inQuotes = 0;
+    char *cursor   = start;
+    char *write    = out;
 
     while (*cursor != '\0') {
         if (*cursor == '"') {
-            inQuotes = !inQuotes;
+            inQuotes = !inQuotes;       /* Toggle quote state. */
         } else if (*cursor == separator && !inQuotes) {
-            break;
+            break;                      /* Unquoted separator ends the field. */
         }
-
         *write++ = *cursor++;
     }
     *write = '\0';
     stripEnclosingQuotes(out);
 
+    /* Advance past the separator so the next call starts at the next field. */
     if (*cursor == separator)
         return cursor + 1;
 
     return cursor;
 }
 
+/*
+ * Allocate a heap copy of src.
+ * Centralising this prevents repeated malloc+strcpy patterns
+ * and makes NULL-checks easy to add in one place.
+ */
 static char *copyString(const char *src) {
-    size_t len = strlen(src);
-    char *copy = malloc(len + 1);
+    size_t len  = strlen(src);
+    char  *copy = malloc(len + 1);
     if (copy == NULL)
         return NULL;
-
     strcpy(copy, src);
     return copy;
 }
 
+/*
+ * Parse a CSV line into a heap allocated city struct.
+ * Column order in uscities.csv:
+ *   0: city   1: city_ascii   2: state_id   3: state_name
+ *   4: county_fips   5: county_name   6: lat   7: lng
+ *   8: population   and other columns we ignore.
+ * We skip columns we do not need by calling getNextField and
+ * discarding the result into the scratch buffer.
+ */
 city *stringToCity(char *line) {
     if (line == NULL)
         return NULL;
@@ -79,18 +111,37 @@ city *stringToCity(char *line) {
     if (c == NULL)
         return NULL;
 
-    char field[1000];
+    char  field[1000];
     char *cursor = line;
 
-    cursor = getNextField(cursor, ',', field);
-    c->name = copyString(field);
+    /* Column 0: city name */
+    cursor    = getNextField(cursor, ',', field);
+    c->name   = copyString(field);
 
-    cursor = getNextField(cursor, ',', field);
+    /* Column 1: ASCII city name */
+    cursor       = getNextField(cursor, ',', field);
     c->nameASCII = copyString(field);
 
-    if (c->name == NULL || c->nameASCII == NULL) {
+    /* Column 2: state abbreviation (e.g. "NY") */
+    cursor     = getNextField(cursor, ',', field);
+    c->stateID = copyString(field);
+
+    /* Columns 3 to 7: skip state_name, county_fips, county_name, lat, lng */
+    cursor = getNextField(cursor, ',', field); /* state_name  */
+    cursor = getNextField(cursor, ',', field); /* county_fips */
+    cursor = getNextField(cursor, ',', field); /* county_name */
+    cursor = getNextField(cursor, ',', field); /* lat         */
+    cursor = getNextField(cursor, ',', field); /* lng         */
+
+    /* Column 8: population parse as long integer */
+    cursor       = getNextField(cursor, ',', field);
+    c->population = atol(field);
+
+    /* If any heap allocation failed, free everything and return NULL. */
+    if (c->name == NULL || c->nameASCII == NULL || c->stateID == NULL) {
         free(c->name);
         free(c->nameASCII);
+        free(c->stateID);
         free(c);
         return NULL;
     }
@@ -98,18 +149,20 @@ city *stringToCity(char *line) {
     return c;
 }
 
+/*
+ * Print a single city in the appropriate format required:
+ *   "Chicago IL, population 8489066"
+ */
 void printCity(city *c) {
     if (c == NULL)
         return;
-
-    printf("%s (%s)\n", c->name, c->nameASCII);
+    printf("%s %s, population %ld\n", c->name, c->stateID, c->population);
 }
 
 /*
- * singly-linked list node.
- *
- * Using void* for data is ideal because it makes the node type-agnostic, so the same
- * struct and functions can hold any heap-allocated data (city*,
+ * Singly-linked list node.
+ * Using void* for data makes the node type-agnostic, so the same
+ * struct and functions can hold any heap allocated data (city*,
  * int*, etc.) without rewriting list logic for each type.
  */
 typedef struct singleNode {
@@ -118,8 +171,9 @@ typedef struct singleNode {
 } sNode;
 
 /*
- * Allocating and initialising a new list node that wraps the given data pointer.
- * returning NULL is a check to detect the error cleanly.
+ * Allocate and initialise a new list node wrapping the given data pointer.
+ * Returning NULL on failure detects the error cleanly
+ * rather than dereferencing a bad pointer.
  */
 sNode *createNode(void *data) {
     if (data == NULL)
@@ -132,28 +186,28 @@ sNode *createNode(void *data) {
         return NULL;
 
     node->data = data;
-    node->next = NULL;   /* Always NULL-terminate so list traversal is safe. */
+    node->next = NULL;  /* NULL terminate so list traversal is safe. */
 
     return node;
 }
 
 /*
- * Inserting node at the head of the list.
- * Using a double pointer so that the head variable is updated in place.
- * O(1) time complexity because we only change a few pointers, regardless of list length.
+ * Insert node at the head of the list.
+ * O(1) operation — only a fixed number of pointer updates regardless of list length.
+ * We accept a double pointer so the caller's head variable is updated in place.
  */
 void addFront(sNode **list, sNode *node) {
     if (list == NULL || node == NULL)
         return;
 
-    node->next = *list;   /* Chain new node onto the existing list. */
-    *list = node;         /* Advance the caller's head to the new node. */
+    node->next = *list;  /* Chain new node onto the existing list. */
+    *list = node;        /* Advance the caller's head to the new node. */
 }
 
 /*
  * Append node at the tail of the list.
- * O(n) time complexity because we traverse to the end.
- * Ensures that cities appear in the same order as in the CSV file.
+ * O(n) operation — we must traverse to the end.
+ * Used during file loading so cities appear in the same order as in the CSV.
  */
 void addEnd(sNode **list, sNode *node) {
     if (list == NULL || node == NULL)
@@ -175,8 +229,8 @@ void addEnd(sNode **list, sNode *node) {
 
 /*
  * Return a pointer to the nth node.
- * Returning NULL for out of range validity check.
- * Especially without knowing the list length up front.
+ * Returning NULL for out-of-range n validity check
+ * without needing to know the list length in advance.
  */
 sNode *getNode(sNode *list, int n) {
     if (n <= 0)
@@ -193,14 +247,17 @@ sNode *getNode(sNode *list, int n) {
 }
 
 /*
- * Unlink and free the given node from the list.
+ * Unlink and free the given node and its city payload.
+ * Centralising deallocation here (rather than in callers) ensures
+ * every code path that removes a node also frees its memory,
+ * preventing leaks and double frees.
  */
 void deleteNode(sNode **list, sNode *node) {
     if (list == NULL || *list == NULL || node == NULL)
         return;
 
     if (*list == node) {
-        /* Removing the head: just advance the head pointer. */
+        /* Removing the head: advance the head pointer past it. */
         *list = node->next;
     } else {
         /* Traverse until we find the node just before the target. */
@@ -212,19 +269,22 @@ void deleteNode(sNode **list, sNode *node) {
         if (prev->next == NULL)
             return;
 
-        prev->next = node->next;   /* Bypass the target node. */
+        prev->next = node->next;  /* Bypass the target node. */
     }
 
-    /* Free the city node. */
+    /* Free the city payload before the node itself. */
     city *c = (city *)node->data;
     free(c->name);
     free(c->nameASCII);
+    free(c->stateID);
     free(c);
     free(node);
 }
 
 /*
  * Return the number of nodes in the list.
+ * O(n) Traversal acceptable because "size" is a user command,
+ * not an inner-loop operation.
  */
 int listLength(sNode *list) {
     int count = 0;
@@ -235,7 +295,11 @@ int listLength(sNode *list) {
     return count;
 }
 
-/* Reverse the list in place, O(n) operations. */
+/*
+ * Reverse the list in place using three-pointer iteration, O(n).
+ * We re-wire next pointers rather than copying data so this works
+ * for any payload type without any extra allocation.
+ */
 void reverseList(sNode **list) {
     if (list == NULL)
         return;
@@ -245,79 +309,52 @@ void reverseList(sNode **list) {
     sNode *next    = NULL;
 
     while (current != NULL) {
-        next           = current->next;  /* Save the forward link before overwriting it. */
-        current->next  = prev;           /* Reverse the pointer. */
-        prev           = current;        /* Advance prev to the node we just processed. */
-        current        = next;           /* Move forward in the original order. */
+        next          = current->next;  /* Save forward link before overwriting. */
+        current->next = prev;           /* Reverse the pointer direction. */
+        prev          = current;        /* Advance prev to the node just processed. */
+        current       = next;           /* Move forward in the original order. */
     }
 
-    *list = prev;   /* prev is now the new head (was the old tail). */
+    *list = prev;  /* prev is now the new head (was the old tail). */
 }
 
 
-/* File I/O */
+/* File I/O Implementations */
 
 /*
  * Read the first 20 cities from filename into a linked list and return it.
- * the CSV is a header row, so consuming it with fgets before the loop.
+ * We cap at 20 to match the requirements.
+ * The first CSV line is a header row, so we consume it before the data loop.
  */
 sNode *readCityList(char *filename) {
     FILE *file = fopen(filename, "r");
-
-    /* DEBUG: confirm whether fopen succeeded or failed. */
-    if (file == NULL) {
-        printf("DEBUG: fopen failed for '%s'\n", filename);
+    if (file == NULL)
         return NULL;
-    }
-    printf("DEBUG: fopen succeeded for '%s'\n", filename);
 
-    char *buffer = NULL;
+    char  *buffer   = NULL;
     size_t capacity = 0;
 
-    /* Discarding the header line. */
+    /* Discard the header line; it is metadata, not city data. */
     if (getline(&buffer, &capacity, file) == -1) {
-        printf("DEBUG: getline failed on header line\n");
         fclose(file);
         free(buffer);
         return NULL;
     }
-    printf("DEBUG: header line read OK: '%s'\n", buffer);
 
     sNode *list = NULL;
-    int count   = 0;
+    int    count = 0;
 
     while (count < 20 && getline(&buffer, &capacity, file) != -1) {
-        killNewline(buffer);
+        killNewline(buffer);  /* Strip trailing newline before parsing. */
 
-        /* DEBUG: show the raw line and its length so we can spot
-         * any hidden characters (e.g. \r) that would corrupt parsing. */
-        printf("DEBUG line %d (len=%zu): '%s'\n", count, strlen(buffer), buffer);
-
-        city *c = stringToCity(buffer);
-
-        /* DEBUG: confirm whether stringToCity produced a valid city. */
-        if (c == NULL) {
-            printf("DEBUG: stringToCity returned NULL on line %d — skipping\n", count);
-            continue;
-        }
-        printf("DEBUG: parsed city[%d] name='%s' ascii='%s'\n", count, c->name, c->nameASCII);
+        city  *c    = stringToCity(buffer);
+        if (c == NULL)
+            continue;         /* Skip malformed lines rather than inserting NULL. */
 
         sNode *node = createNode(c);
-
-        /* DEBUG: confirm node allocation succeeded. */
-        if (node == NULL) {
-            printf("DEBUG: createNode returned NULL on line %d\n", count);
-            free(c->name);
-            free(c->nameASCII);
-            free(c);
-            continue;
-        }
-
-        addEnd(&list, node);
+        addEnd(&list, node);  /* Append to preserve file order. */
         count++;
     }
-
-    printf("DEBUG: finished reading — %d cities loaded\n", count);
 
     fclose(file);
     free(buffer);
@@ -325,9 +362,9 @@ sNode *readCityList(char *filename) {
 }
 
 /*
- * Print the city data for the first n nodes in the list.
- * Stopping at n (rather than printing the whole list) lets the user
- * preview a subset without modifying the list structure.
+ * Print city data for the first n nodes.
+ * Stops at n so the user can preview a subset without
+ * modifying the list structure.
  */
 void printFirstN(sNode *list, int n) {
     int count = 0;
@@ -338,8 +375,11 @@ void printFirstN(sNode *list, int n) {
     }
 }
 
- /* Move the n-th node to the front of the list.*/
- /* Short-circuiting for n <= 1 because the first node is already at the front. */
+/*
+ * Move the nth node to the front of the list.
+ * Short circuits for n <= 1 because node 1 is already the head
+ * moving it would be a no-op and the loop below requires a valid prev.
+ */
 void moveToFront(sNode **list, int n) {
     if (list == NULL || *list == NULL || n <= 1)
         return;
@@ -348,18 +388,18 @@ void moveToFront(sNode **list, int n) {
     sNode *current = *list;
     int    count   = 1;
 
-    /* Walk to the n-th node, keeping track of its predecessor. */
+    /* Traverse to the nth node, keeping track of its predecessor. */
     while (current != NULL && count < n) {
-        prev = current;
+        prev    = current;
         current = current->next;
         count++;
     }
 
-    /* Checking if n was larger than the list length; nothing to promote. */
+    /* n was larger than the list length; nothing to promote. */
     if (current == NULL)
         return;
 
-    /* Unlink current from its position. */
+    /* Unlink current from its current position... */
     prev->next = current->next;
 
     /* then splice it in as the new head. */
@@ -383,23 +423,19 @@ void deleteNth(sNode **list, int n) {
 int main(void) {
     sNode *list = readCityList("../../Resources/uscities.csv");
 
-    /* DEBUG: confirm final list state after readCityList returns. */
-    printf("DEBUG: final list size = %d\n", listLength(list));
-    if (list != NULL) {
-        city *c = (city *)list->data;
-        printf("DEBUG: first city = name='%s' ascii='%s'\n", c->name, c->nameASCII);
-    } else {
-        printf("DEBUG: list is NULL — nothing was loaded\n");
-    }
-
-    /* Command loop: prompt for a command, then execute it. */
+    /*
+     * numBuf holds the raw text from fgets when reading an integer.
+     * Using fgets + atoi keeps stdin consistent:
+     * fgets always consumes the newline, so there is no residual '\n'
+     * left to corrupt the next command read.
+     */
     char command[100];
     char numBuf[32];
 
     while (1) {
         printf("\nsize, delete, reverse, get, or print: ");
 
-        /* fgets includes the newline in the buffer; killNewline strips it. */
+        /* fgets returns NULL on EOF (e.g. Ctrl-D); treat as exit signal. */
         if (fgets(command, sizeof(command), stdin) == NULL)
             break;
         killNewline(command);
@@ -412,8 +448,7 @@ int main(void) {
             printf("Enter a number: ");
             if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
                 break;
-            int n = atoi(numBuf);
-            deleteNth(&list, n);
+            deleteNth(&list, atoi(numBuf));
         }
 
         else if (strcmp(command, "reverse") == 0) {
@@ -424,16 +459,14 @@ int main(void) {
             printf("Enter a number: ");
             if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
                 break;
-            int n = atoi(numBuf);
-            moveToFront(&list, n);
+            moveToFront(&list, atoi(numBuf));
         }
 
         else if (strcmp(command, "print") == 0) {
             printf("Enter a number: ");
             if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
                 break;
-            int n = atoi(numBuf);
-            printFirstN(list, n);
+            printFirstN(list, atoi(numBuf));
         }
 
         else {
@@ -442,7 +475,11 @@ int main(void) {
         }
     }
 
-    /* Traverse the list and free each node's payload before freeing the node itself. */
+    /*
+     * Traverse the list and free every node's payload before freeing the node.
+     * We save list->next before freeing because reading freed memory
+     * is undefined behaviour.
+     */
     while (list != NULL) {
         sNode *temp = list;
         list = list->next;
@@ -450,6 +487,7 @@ int main(void) {
         city *c = (city *)temp->data;
         free(c->name);
         free(c->nameASCII);
+        free(c->stateID);
         free(c);
         free(temp);
     }

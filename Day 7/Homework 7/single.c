@@ -16,8 +16,10 @@ typedef struct city {
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n')
-        str[len - 1] = '\0';
-    
+        str[--len] = '\0';
+    /* Also strip \r to handle Windows-style CRLF line endings. */
+    if (len > 0 && str[len - 1] == '\r')
+        str[--len] = '\0';
 }
 
 /* Extract the next comma-separated field from 'start' into 'out'.
@@ -261,30 +263,61 @@ void reverseList(sNode **list) {
  */
 sNode *readCityList(char *filename) {
     FILE *file = fopen(filename, "r");
-    if (file == NULL)
+
+    /* DEBUG: confirm whether fopen succeeded or failed. */
+    if (file == NULL) {
+        printf("DEBUG: fopen failed for '%s'\n", filename);
         return NULL;
+    }
+    printf("DEBUG: fopen succeeded for '%s'\n", filename);
 
     char *buffer = NULL;
     size_t capacity = 0;
 
     /* Discarding the header line. */
     if (getline(&buffer, &capacity, file) == -1) {
+        printf("DEBUG: getline failed on header line\n");
         fclose(file);
         free(buffer);
         return NULL;
     }
+    printf("DEBUG: header line read OK: '%s'\n", buffer);
 
     sNode *list = NULL;
     int count   = 0;
 
     while (count < 20 && getline(&buffer, &capacity, file) != -1) {
-        killNewline(buffer);        /* Strip trailing '\n' before parsing. */
+        killNewline(buffer);
 
-        city  *c    = stringToCity(buffer);
+        /* DEBUG: show the raw line and its length so we can spot
+         * any hidden characters (e.g. \r) that would corrupt parsing. */
+        printf("DEBUG line %d (len=%zu): '%s'\n", count, strlen(buffer), buffer);
+
+        city *c = stringToCity(buffer);
+
+        /* DEBUG: confirm whether stringToCity produced a valid city. */
+        if (c == NULL) {
+            printf("DEBUG: stringToCity returned NULL on line %d — skipping\n", count);
+            continue;
+        }
+        printf("DEBUG: parsed city[%d] name='%s' ascii='%s'\n", count, c->name, c->nameASCII);
+
         sNode *node = createNode(c);
-        addEnd(&list, node);        /* Preserve file order by always appending. */
+
+        /* DEBUG: confirm node allocation succeeded. */
+        if (node == NULL) {
+            printf("DEBUG: createNode returned NULL on line %d\n", count);
+            free(c->name);
+            free(c->nameASCII);
+            free(c);
+            continue;
+        }
+
+        addEnd(&list, node);
         count++;
     }
+
+    printf("DEBUG: finished reading — %d cities loaded\n", count);
 
     fclose(file);
     free(buffer);
@@ -350,6 +383,15 @@ void deleteNth(sNode **list, int n) {
 int main(void) {
     sNode *list = readCityList("../../Resources/uscities.csv");
 
+    /* DEBUG: confirm final list state after readCityList returns. */
+    printf("DEBUG: final list size = %d\n", listLength(list));
+    if (list != NULL) {
+        city *c = (city *)list->data;
+        printf("DEBUG: first city = name='%s' ascii='%s'\n", c->name, c->nameASCII);
+    } else {
+        printf("DEBUG: list is NULL — nothing was loaded\n");
+    }
+
     /* Command loop: prompt for a command, then execute it. */
     char command[100];
     char numBuf[32];
@@ -370,7 +412,7 @@ int main(void) {
             printf("Enter a number: ");
             if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
                 break;
-            int n = atoi(numBuf);   
+            int n = atoi(numBuf);
             deleteNth(&list, n);
         }
 

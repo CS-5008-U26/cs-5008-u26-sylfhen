@@ -5,6 +5,83 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Struct to store city record fields */
+typedef struct city {
+    char *name;
+    char *nameASCII;
+} city;
+
+void killNewline(char *str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n')
+        str[len - 1] = '\0';
+}
+
+/* Extract the next comma-separated field from 'start' into 'out'.
+ * Returns a pointer to the character just after the separator (or end of string).
+ */
+static char *getNextField(char *start, char separator, char *out) {
+    if (*start == '\0') {
+        out[0] = '\0';
+        return start;
+    }
+
+    char *sepPos = strchr(start, separator);
+    if (sepPos == NULL) {
+        strcpy(out, start);
+        return start + strlen(start);
+    }
+
+    size_t fieldLength = (size_t)(sepPos - start);
+    strncpy(out, start, fieldLength);
+    out[fieldLength] = '\0';
+    return sepPos + 1;
+}
+
+static char *copyString(const char *src) {
+    size_t len = strlen(src);
+    char *copy = malloc(len + 1);
+    if (copy == NULL)
+        return NULL;
+
+    strcpy(copy, src);
+    return copy;
+}
+
+city *stringToCity(char *line) {
+    if (line == NULL)
+        return NULL;
+
+    city *c = malloc(sizeof(city));
+    if (c == NULL)
+        return NULL;
+
+    char field[1000];
+    char *cursor = line;
+
+    cursor = getNextField(cursor, ',', field);
+    c->name = copyString(field);
+
+    cursor = getNextField(cursor, ',', field);
+    c->nameASCII = copyString(field);
+
+    if (c->name == NULL || c->nameASCII == NULL) {
+        free(c->name);
+        free(c->nameASCII);
+        free(c);
+        return NULL;
+    }
+
+    return c;
+}
+
+void printCity(city *c) {
+    if (c == NULL)
+        return;
+
+    printf("%s (%s)\n", c->name, c->nameASCII);
+}
+
 /*
  * singly-linked list node.
  *

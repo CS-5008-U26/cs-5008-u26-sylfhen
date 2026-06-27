@@ -276,6 +276,7 @@ void reverseList(dNode **list) {
 
     dNode *current = *list;
     dNode *temp    = NULL;
+    dNode *newHead = NULL;
 
     while (current != NULL) {
         /* Swap next and prev for the current node. */
@@ -283,13 +284,13 @@ void reverseList(dNode **list) {
         current->prev = current->next;
         current->next = temp;
 
-        /* Move to the next node in the original order (now stored in prev). */
-        dNode *newHead = current;  /* Keep track of the last processed node. */
+        /* Keep track of the last processed node (will become the new head). */
+        newHead = current;
         current = current->prev;
     }
 
     /* Update the head pointer to the new head (old tail). */
-    *list = newHead;  
+    *list = newHead;
 }
 
 /* File I/O Implementations */

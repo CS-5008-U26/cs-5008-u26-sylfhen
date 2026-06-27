@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 /* Struct to store city record fields */
 typedef struct city {
@@ -20,22 +21,40 @@ void killNewline(char *str) {
 /* Extract the next comma-separated field from 'start' into 'out'.
  * Returns a pointer to the character just after the separator (or end of string).
  */
+static void stripEnclosingQuotes(char *field) {
+    size_t len = strlen(field);
+    if (len >= 2 && field[0] == '"' && field[len - 1] == '"') {
+        memmove(field, field + 1, len - 2);
+        field[len - 2] = '\0';
+    }
+}
+
 static char *getNextField(char *start, char separator, char *out) {
     if (*start == '\0') {
         out[0] = '\0';
         return start;
     }
 
-    char *sepPos = strchr(start, separator);
-    if (sepPos == NULL) {
-        strcpy(out, start);
-        return start + strlen(start);
-    }
+    int inQuotes = 0;
+    char *cursor = start;
+    char *write = out;
 
-    size_t fieldLength = (size_t)(sepPos - start);
-    strncpy(out, start, fieldLength);
-    out[fieldLength] = '\0';
-    return sepPos + 1;
+    while (*cursor != '\0') {
+        if (*cursor == '"') {
+            inQuotes = !inQuotes;
+        } else if (*cursor == separator && !inQuotes) {
+            break;
+        }
+
+        *write++ = *cursor++;
+    }
+    *write = '\0';
+    stripEnclosingQuotes(out);
+
+    if (*cursor == separator)
+        return cursor + 1;
+
+    return cursor;
 }
 
 static char *copyString(const char *src) {
@@ -243,15 +262,20 @@ sNode *readCityList(char *filename) {
     if (file == NULL)
         return NULL;
 
-    char buffer[1000];
+    char *buffer = NULL;
+    size_t capacity = 0;
 
     /* Discarding the header line. */
-    fgets(buffer, sizeof(buffer), file);
+    if (getline(&buffer, &capacity, file) == -1) {
+        fclose(file);
+        free(buffer);
+        return NULL;
+    }
 
     sNode *list = NULL;
     int count   = 0;
 
-    while (count < 20 && fgets(buffer, sizeof(buffer), file) != NULL) {
+    while (count < 20 && getline(&buffer, &capacity, file) != -1) {
         killNewline(buffer);        /* Strip trailing '\n' before parsing. */
 
         city  *c    = stringToCity(buffer);
@@ -261,6 +285,7 @@ sNode *readCityList(char *filename) {
     }
 
     fclose(file);
+    free(buffer);
     return list;
 }
 
@@ -331,7 +356,8 @@ int main(void) {
         printf("\nsize, delete, reverse, get, or print: ");
 
         /* fgets includes the newline in the buffer; killNewline strips it. */
-        fgets(command, sizeof(command), stdin);
+        if (fgets(command, sizeof(command), stdin) == NULL)
+            break;
         killNewline(command);
 
         if (strcmp(command, "size") == 0) {
@@ -340,7 +366,8 @@ int main(void) {
 
         else if (strcmp(command, "delete") == 0) {
             printf("Enter a number: ");
-            fgets(numBuf, sizeof(numBuf), stdin);
+            if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
+                break;
             int n = atoi(numBuf);   
             deleteNth(&list, n);
         }
@@ -351,14 +378,16 @@ int main(void) {
 
         else if (strcmp(command, "get") == 0) {
             printf("Enter a number: ");
-            fgets(numBuf, sizeof(numBuf), stdin);
+            if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
+                break;
             int n = atoi(numBuf);
             moveToFront(&list, n);
         }
 
         else if (strcmp(command, "print") == 0) {
             printf("Enter a number: ");
-            fgets(numBuf, sizeof(numBuf), stdin);
+            if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
+                break;
             int n = atoi(numBuf);
             printFirstN(list, n);
         }

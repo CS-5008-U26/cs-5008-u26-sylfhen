@@ -133,7 +133,7 @@ city *stringToCity(char *line) {
 }
 
 /*
- * Print a single city: "Chicago IL, population 8489066"
+ * Print city: For example, "Chicago IL, population 8489066"
  */
 void printCity(city *c) {
     if (c == NULL)
@@ -142,7 +142,7 @@ void printCity(city *c) {
 }
 
 /*
- * Doubly-linked list node.
+ * Doubly-linked list node construction.
  * Each node carries both a forward (next) and backward (prev) pointer,
  * allowing O(1) removal without needing to traverse to find the predecessor.
  */
@@ -154,7 +154,7 @@ typedef struct doubleNode {
 
 /*
  * Allocate and initialise a new doubly-linked list node.
- * Both next and prev are set to NULL — the caller links the node in.
+ * Returns NULL on allocation failure.
  */
 dNode *createNode(void *data) {
     if (data == NULL)
@@ -173,7 +173,7 @@ dNode *createNode(void *data) {
 
 /*
  * Insert node at the head of the list.
- * O(1): updates the old head's prev pointer and the caller's head variable.
+ * O(1) complexity: updates the old head's prev pointer and the caller's head variable.
  */
 void addFront(dNode **list, dNode *node) {
     if (list == NULL || node == NULL)
@@ -190,7 +190,7 @@ void addFront(dNode **list, dNode *node) {
 
 /*
  * Append node at the tail of the list.
- * O(n): traverses to the end, then links in both directions.
+ * O(n) complexity: traverses to the end, then links in both directions.
  */
 void addEnd(dNode **list, dNode *node) {
     if (list == NULL || node == NULL)
@@ -206,12 +206,12 @@ void addEnd(dNode **list, dNode *node) {
         current = current->next;
 
     current->next = node;
-    node->prev    = current;  /* Back-link to the previous tail. */
+    node->prev    = current;  /* Back link to the previous tail. */
     node->next    = NULL;
 }
 
 /*
- * Return a pointer to the nth node (1-based).
+ * Return a pointer to the nth node.
  * Returns NULL when n is out of range.
  */
 dNode *getNode(dNode *list, int n) {
@@ -230,7 +230,7 @@ dNode *getNode(dNode *list, int n) {
 /*
  * Unlink and free the given node and its city payload.
  * Because each node knows its prev, we do not need to search for the
- * predecessor — removal is O(1) once the node pointer is in hand.
+ * predecessor. Removal is O(1) once the node pointer is in hand.
  */
 void deleteNode(dNode **list, dNode *node) {
     if (list == NULL || *list == NULL || node == NULL)
@@ -346,8 +346,7 @@ void printFirstN(dNode *list, int n) {
 
 /*
  * Move the nth node to the front of the list.
- * With a doubly-linked list the predecessor is found via node->prev,
- * so we do not need a separate prev-tracking pointer during traversal.
+ * With a doubly linked list the predecessor is found via node->prev.
  */
 void moveToFront(dNode **list, int n) {
     if (list == NULL || *list == NULL || n <= 1)
@@ -384,12 +383,15 @@ void deleteNth(dNode **list, int n) {
 int main(void) {
     dNode *list = readCityList("../../Resources/uscities.csv");
 
+    /* Command loop: size, delete, reverse, get, print. */
+    /* numBuf is used to read a number from the user for delete, get, and print commands. */
     char command[100];
     char numBuf[32];
 
     while (1) {
         printf("\nsize, delete, reverse, get, or print: ");
 
+        /* fgets returns NULL on EOF (e.g. Ctrl-D); treat as exit signal. */
         if (fgets(command, sizeof(command), stdin) == NULL)
             break;
         killNewline(command);
@@ -424,6 +426,7 @@ int main(void) {
         }
 
         else {
+            /* Any unrecognised command exits the loop gracefully. */
             break;
         }
     }

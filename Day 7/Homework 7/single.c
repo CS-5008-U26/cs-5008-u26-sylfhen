@@ -12,10 +12,12 @@ typedef struct city {
     char *nameASCII;
 } city;
 
+/* Strip a trailing newline from str, if present */
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n')
         str[len - 1] = '\0';
+    
 }
 
 /* Extract the next comma-separated field from 'start' into 'out'.

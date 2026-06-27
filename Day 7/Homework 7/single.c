@@ -1,0 +1,350 @@
+/*Linked List Implementation*/
+
+/*Standard Library Includes*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/*
+ * singly-linked list node.
+ *
+ * Using void* for data is ideal because it makes the node type-agnostic, so the same
+ * struct and functions can hold any heap-allocated data (city*,
+ * int*, etc.) without rewriting list logic for each type.
+ */
+typedef struct singleNode {
+    void *data;
+    struct singleNode *next;
+} sNode;
+
+/*
+ * Allocating and initialising a new list node that wraps the given data pointer.
+ * returning NULL is a check to detect the error cleanly.
+ */
+sNode *createNode(void *data) {
+    if (data == NULL)
+        return NULL;
+
+    sNode *node = malloc(sizeof(sNode));
+
+    /* malloc can fail on OOM; propagate the failure rather than segfault. */
+    if (node == NULL)
+        return NULL;
+
+    node->data = data;
+    node->next = NULL;   /* Always NULL-terminate so list traversal is safe. */
+
+    return node;
+}
+
+/*
+ * Insert node at the head of the list.
+ *
+ * O(1) -- we only need to update the head pointer, so this is preferred
+ * when insertion order does not matter.  We accept a double pointer so
+ * that the caller's head variable is updated in place.
+ */
+void addFront(sNode **list, sNode *node) {
+    if (list == NULL || node == NULL)
+        return;
+
+    node->next = *list;   /* Chain new node onto the existing list. */
+    *list = node;         /* Advance the caller's head to the new node. */
+}
+
+/*
+ * Append node at the tail of the list.
+ *
+ * O(n) -- we must walk to the end.  Used during initial file loading so
+ * that cities appear in the same order as in the CSV file.
+ */
+void addEnd(sNode **list, sNode *node) {
+    if (list == NULL || node == NULL)
+        return;
+
+    /* Empty list: the new node is both head and tail. */
+    if (*list == NULL) {
+        *list = node;
+        return;
+    }
+
+    /* Walk to the last node, then attach. */
+    sNode *current = *list;
+    while (current->next != NULL)
+        current = current->next;
+
+    current->next = node;
+}
+
+/*
+ * Return a pointer to the n-th node (1-indexed).
+ *
+ * Returning NULL for out-of-range n lets every caller check validity
+ * without knowing the list length up front.
+ */
+sNode *getNode(sNode *list, int n) {
+    if (n <= 0)
+        return NULL;
+
+    int count = 1;
+    while (list != NULL && count < n) {
+        list = list->next;
+        count++;
+    }
+
+    /* Returns NULL naturally if the list is shorter than n. */
+    return list;
+}
+
+/*
+ * Unlink and free the given node from the list.
+ *
+ * We free the city payload here (not in the caller) because deleteNode
+ * owns the node's lifetime once it takes over the unlink.  Centralising
+ * deallocation prevents double-free and memory leaks across call sites.
+ */
+void deleteNode(sNode **list, sNode *node) {
+    if (list == NULL || *list == NULL || node == NULL)
+        return;
+
+    if (*list == node) {
+        /* Removing the head: just advance the head pointer. */
+        *list = node->next;
+    } else {
+        /* Walk until we find the node just before the target. */
+        sNode *prev = *list;
+        while (prev->next != NULL && prev->next != node)
+            prev = prev->next;
+
+        /* Node was not found in this list; nothing to do. */
+        if (prev->next == NULL)
+            return;
+
+        prev->next = node->next;   /* Bypass the target node. */
+    }
+
+    /* Free the city payload before the node itself. */
+    city *c = (city *)node->data;
+    free(c->name);
+    free(c->nameASCII);
+    free(c);
+    free(node);
+}
+
+/*
+ * Return the number of nodes in the list.
+ *
+ * O(n) walk -- acceptable here because "size" is a user command, not
+ * an inner-loop operation.  If performance mattered we would cache the
+ * length in a wrapper struct.
+ */
+int listLength(sNode *list) {
+    int count = 0;
+    while (list != NULL) {
+        count++;
+        list = list->next;
+    }
+    return count;
+}
+
+/*
+ * Reverse the list in place, O(n).
+ *
+ * We re-wire next pointers rather than copying data so this works for
+ * any payload type and avoids any extra allocation.
+ */
+void reverseList(sNode **list) {
+    if (list == NULL)
+        return;
+
+    sNode *prev    = NULL;
+    sNode *current = *list;
+    sNode *next    = NULL;
+
+    while (current != NULL) {
+        next           = current->next;  /* Save the forward link before overwriting it. */
+        current->next  = prev;           /* Reverse the pointer. */
+        prev           = current;        /* Advance prev to the node we just processed. */
+        current        = next;           /* Move forward in the original order. */
+    }
+
+    *list = prev;   /* prev is now the new head (was the old tail). */
+}
+
+
+/* ---------- File I/O ---------- */
+
+/*
+ * Read the first 20 cities from filename into a linked list and return it.
+ *
+ * We cap at 20 nodes to match the assignment spec.  The first line of
+ * the CSV is a header row, so we consume it with fgets before the loop.
+ */
+sNode *readCityList(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+        return NULL;
+
+    char buffer[1000];
+
+    /* Discard the header line; we don't want it as city data. */
+    fgets(buffer, sizeof(buffer), file);
+
+    sNode *list = NULL;
+    int count   = 0;
+
+    while (count < 20 && fgets(buffer, sizeof(buffer), file) != NULL) {
+        killNewline(buffer);        /* Strip trailing '\n' before parsing. */
+
+        city  *c    = stringToCity(buffer);
+        sNode *node = createNode(c);
+        addEnd(&list, node);        /* Preserve file order by always appending. */
+        count++;
+    }
+
+    fclose(file);
+    return list;
+}
+
+
+/* ---------- Printing ---------- */
+
+/*
+ * Print the city data for the first n nodes in the list.
+ *
+ * Stopping at n (rather than printing the whole list) lets the user
+ * preview a subset without modifying the list structure.
+ */
+void printFirstN(sNode *list, int n) {
+    int count = 0;
+    while (list != NULL && count < n) {
+        printCity((city *)list->data);
+        list = list->next;
+        count++;
+    }
+}
+
+
+/* ---------- Structural mutations ---------- */
+
+/*
+ * Move the n-th node to the front of the list.
+ *
+ * "get" in the assignment spec means "promote to head", not merely read.
+ * We short-circuit for n <= 1 because the first node is already at the
+ * front -- moving it would be a no-op.
+ */
+void moveToFront(sNode **list, int n) {
+    if (list == NULL || *list == NULL || n <= 1)
+        return;
+
+    sNode *prev    = NULL;
+    sNode *current = *list;
+    int    count   = 1;
+
+    /* Walk to the n-th node, keeping track of its predecessor. */
+    while (current != NULL && count < n) {
+        prev = current;
+        current = current->next;
+        count++;
+    }
+
+    /* n was larger than the list length; nothing to promote. */
+    if (current == NULL)
+        return;
+
+    /* Unlink current from its position... */
+    prev->next = current->next;
+
+    /* ...then splice it in as the new head. */
+    current->next = *list;
+    *list = current;
+}
+
+/*
+ * Delete the n-th node from the list.
+ *
+ * Thin wrapper: resolve n to a pointer first, then delegate to
+ * deleteNode which owns all deallocation logic.
+ */
+void deleteNth(sNode **list, int n) {
+    sNode *node = getNode(*list, n);
+    deleteNode(list, node);
+}
+
+
+/* ---------- Main ---------- */
+
+int main(void) {
+    sNode *list = readCityList("../../Resources/uscities.csv");
+
+    /*
+     * numBuf holds the raw text from fgets when reading an integer.
+     * Using fgets + atoi (instead of scanf + getchar) keeps stdin
+     * consistent: fgets always consumes the newline, so there is no
+     * residual '\n' left to corrupt the next command read.
+     */
+    char command[100];
+    char numBuf[32];
+
+    while (1) {
+        printf("\nsize, delete, reverse, get, or print: ");
+
+        /* fgets includes the newline in the buffer; killNewline strips it. */
+        fgets(command, sizeof(command), stdin);
+        killNewline(command);
+
+        if (strcmp(command, "size") == 0) {
+            printf("Size is %d\n", listLength(list));
+        }
+
+        else if (strcmp(command, "delete") == 0) {
+            printf("Enter a number: ");
+            fgets(numBuf, sizeof(numBuf), stdin);
+            int n = atoi(numBuf);   /* atoi silently returns 0 for non-numeric input,
+                                       which deleteNth handles safely (getNode returns NULL). */
+            deleteNth(&list, n);
+        }
+
+        else if (strcmp(command, "reverse") == 0) {
+            reverseList(&list);
+        }
+
+        else if (strcmp(command, "get") == 0) {
+            printf("Enter a number: ");
+            fgets(numBuf, sizeof(numBuf), stdin);
+            int n = atoi(numBuf);
+            moveToFront(&list, n);
+        }
+
+        else if (strcmp(command, "print") == 0) {
+            printf("Enter a number: ");
+            fgets(numBuf, sizeof(numBuf), stdin);
+            int n = atoi(numBuf);
+            printFirstN(list, n);
+        }
+
+        else {
+            /* Any unrecognised command exits the loop gracefully. */
+            break;
+        }
+    }
+
+    /*
+     * Walk the list and free every node's payload before freeing the
+     * node itself.  We must save list->next before freeing the node
+     * because reading freed memory is undefined behaviour.
+     */
+    while (list != NULL) {
+        sNode *temp = list;
+        list = list->next;
+
+        city *c = (city *)temp->data;
+        free(c->name);
+        free(c->nameASCII);
+        free(c);
+        free(temp);
+    }
+
+    return 0;
+}

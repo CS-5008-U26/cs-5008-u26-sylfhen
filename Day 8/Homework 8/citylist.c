@@ -1,28 +1,189 @@
 /*
  * citylist.c
  *
- * Reads a user-specified number of cities from a CSV file into a
+ * Reads a user-specified number of cities from uscities.csv into a
  * generic (void *) vector, then prints each city's name, state,
  * population, latitude, and longitude.
  */
 
-/* Standard Libraries & State/Name Lengths */
+/* Standard Library Includes */
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#define NAME_LEN 200
-#define STATE_LEN 10
+#include <string.h>
+#include <sys/types.h>
 
-/* Generic vector of void * pointers */
+/* ------------------------------------------------------------------ */
+/* City struct                                                        */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Struct to store city record fields.
+ * name, stateID, countyFips, latitude, longitude, and population.
+ * name/stateID are heap-allocated so we're not guessing at a fixed
+ * buffer size for city/state names of unknown length.
+ */
+typedef struct city {
+    char   *name;
+    char   *stateID;
+    int     countyFips;
+    double  latitude;
+    double  longitude;
+    long    population;
+} city;
+
+
+/*
+ * Strip trailing newline (and carriage return) from str.
+ */
+void killNewline(char *str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n')
+        str[--len] = '\0';
+    if (len > 0 && str[len - 1] == '\r')
+        str[--len] = '\0';
+}
+
+/*
+ * Remove surrounding double-quotes from a field string, in place.
+ */
+static void stripEnclosingQuotes(char *field) {
+    size_t len = strlen(field);
+    if (len >= 2 && field[0] == '"' && field[len - 1] == '"') {
+        memmove(field, field + 1, len - 2);
+        field[len - 2] = '\0';
+    }
+}
+
+/*
+ * Extract the next separator-delimited field from 'start' into 'out'.
+ * Tracks whether we are inside quotes so that commas within a quoted
+ * field are not treated as separators.
+ */
+static char *getNextField(char *start, char separator, char *out) {
+    if (*start == '\0') {
+        out[0] = '\0';
+        return start;
+    }
+
+    int   inQuotes = 0;
+    char *cursor   = start;
+    char *write    = out;
+
+    while (*cursor != '\0') {
+        if (*cursor == '"') {
+            inQuotes = !inQuotes;
+        } else if (*cursor == separator && !inQuotes) {
+            break;
+        }
+        *write++ = *cursor++;
+    }
+    *write = '\0';
+    stripEnclosingQuotes(out);
+
+    if (*cursor == separator)
+        return cursor + 1;
+
+    return cursor;
+}
+
+/*
+ * Allocate a heap copy of src.
+ */
+static char *copyString(const char *src) {
+    size_t len  = strlen(src);
+    char  *copy = malloc(len + 1);
+    if (copy == NULL)
+        return NULL;
+    strcpy(copy, src);
+    return copy;
+}
+
+/*
+ * Parse a CSV line into a heap-allocated city struct.
+ * Column order in uscities.csv:
+ */
+city *stringToCity(char *line) {
+    if (line == NULL)
+        return NULL;
+
+    city *c = malloc(sizeof(city));
+    if (c == NULL)
+        return NULL;
+
+    /* field is large enough to hold any single CSV field from this file */
+    char  field[1000];
+    char *cursor = line;
+
+    cursor = getNextField(cursor, ',', field); /* city (raw, possibly non-ASCII) */
+
+    cursor  = getNextField(cursor, ',', field); /* city_ascii -> Name */
+    c->name = copyString(field);
+
+    cursor     = getNextField(cursor, ',', field); /* state_id -> State */
+    c->stateID = copyString(field);
+
+    cursor = getNextField(cursor, ',', field); /* state_name (skip) */
+
+    cursor        = getNextField(cursor, ',', field); /* county_fips */
+    c->countyFips = atoi(field);
+
+    cursor = getNextField(cursor, ',', field); /* county_name (skip) */
+
+    cursor       = getNextField(cursor, ',', field); /* lat */
+    c->latitude  = atof(field);
+
+    cursor       = getNextField(cursor, ',', field); /* lng */
+    c->longitude = atof(field);
+
+    cursor        = getNextField(cursor, ',', field); /* population */
+    c->population = atol(field);
+
+    if (c->name == NULL || c->stateID == NULL) {
+        free(c->name);
+        free(c->stateID);
+        free(c);
+        return NULL;
+    }
+
+    return c;
+}
+
+/*
+ * Print city: For example, "Chicago IL, population 8489066, at (41.8375, -87.6866)"
+ */
+void printCity(city *c) {
+    if (c == NULL)
+        return;
+    printf("%s %s, population %ld, at (%.4f, %.4f)\n",
+           c->name, c->stateID, c->population, c->latitude, c->longitude);
+}
+
+/*
+ * Free a city and its heap-allocated fields.
+ */
+void freeCity(city *c) {
+    if (c == NULL)
+        return;
+    free(c->name);
+    free(c->stateID);
+    free(c);
+}
+
+/* ------------------------------------------------------------------ */
+/* Generic vector (Vector3 style: stores void * elements)             */
+/* ------------------------------------------------------------------ */
+
 typedef struct {
-    void **data;   /* array of pointers                */
-    int used;      /* number of elements currently used */
-    int size;      /* capacity of the data array         */
+    void **data;   /* array of pointers                  */
+    int    used;   /* number of elements currently used  */
+    int    size;   /* capacity of the data array          */
 } vector3;
 
-/* Initialize a vector with a small starting capacity */
+/*
+ * Initialise a vector with a small starting capacity.
+ */
 void vectorInit(vector3 *v) {
-    v->size = 4;                                   /* small starting size */
+    v->size = 4;                                  /* small starting size */
     v->used = 0;
     v->data = malloc(v->size * sizeof(void *));    /* buffer sized for pointers, not ints */
     if (v->data == NULL) {
@@ -31,10 +192,13 @@ void vectorInit(vector3 *v) {
     }
 }
 
-/* Insert a void * pointer at the end of the vector, growing if needed */
+/*
+ * Insert a void * pointer at the end of the vector, doubling the
+ * backing array whenever it fills up.
+ */
 void insertLast(vector3 *v, void *x) {
-    if (v->used == v->size) {              /* data array is all used   */
-        int newSize = v->size * 2;
+    if (v->used == v->size) {                 /* data array is all used   */
+        int    newSize = v->size * 2;
         void **newData = malloc(newSize * sizeof(void *)); /* buffer sized for pointers */
         if (newData == NULL) {
             printf("Error: unable to allocate memory for vector\n");
@@ -52,7 +216,10 @@ void insertLast(vector3 *v, void *x) {
     v->used++;
 }
 
-/* Free the vector's backing array (does not free the pointed-to elements) */
+/*
+ * Free the vector's backing array only (elements are freed separately,
+ * since the vector doesn't know how to free arbitrary void * payloads).
+ */
 void vectorFree(vector3 *v) {
     free(v->data);
     v->data = NULL;
@@ -60,97 +227,45 @@ void vectorFree(vector3 *v) {
     v->size = 0;
 }
 
-/* City struct definition */
-typedef struct {
-    char name[NAME_LEN];
-    char state[STATE_LEN];
-    int countyFips;
-    double latitude;
-    double longitude;
-    int population;
-} City;
-
-
-
-/* Remove the trailing newline character from the input string */
-void killNewline(char *str) {
-    size_t len = strlen(str);
-    if (len > 0 && str[len - 1] == '\n') {
-        str[len - 1] = '\0';
-    }
-}
-
-/* Extract the next comma-separated field from 'start' into 'out' */
-char *getNextField(char *start, char separator, char *out) {
-    /* No more fields */
-    if (*start == '\0') {
-        out[0] = '\0';
-        return start;
-    }
-    /* Find the position of the next separator */
-    char *sepPos = strchr(start, separator);
-    if (sepPos == NULL) {
-        /* No separator found copy the rest of the string */
-        strcpy(out, start);
-        /* Strip double-quotes if present */
-        int outLen = strlen(out);
-        if (outLen >= 2 && out[0] == '"' && out[outLen - 1] == '"') {
-            out[outLen - 1] = '\0';
-            memmove(out, out + 1, outLen - 1);
-        }
-        return start + strlen(start);
-    } else {
-        /* Copy characters up to the separator */
-        size_t fieldLength = sepPos - start;
-        strncpy(out, start, fieldLength);
-        out[fieldLength] = '\0';
-        /* Strip double-quotes if present */
-        int outLen = strlen(out);
-        if (outLen >= 2 && out[0] == '"' && out[outLen - 1] == '"') {
-            out[outLen - 1] = '\0';
-            memmove(out, out + 1, outLen - 1);
-        }
-        return sepPos + 1;
-    }
-}
-
 /* ------------------------------------------------------------------ */
-/* Parse one CSV line into a City struct (columns are 1-indexed)      */
+/* File I/O                                                            */
 /* ------------------------------------------------------------------ */
 
-void parseCityLine(char *line, City *c) {
-    char field[1000];   /* one raw CSV field can't exceed the line buffer size */
-    char *ptr = line;
-    int fieldIndex = 1;
+/*
+ * Read up to n cities from filename into the given vector.
+ * Returns the number of cities actually read (may be less than n if
+ * the file runs out of lines first), or -1 if the file can't be opened.
+ */
+int readCityVector(char *filename, int n, vector3 *v) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+        return -1;
 
-    while (*ptr != '\0') {
-        ptr = getNextField(ptr, ',', field);
-        switch (fieldIndex) {
-            case 2: /* Name */
-                strncpy(c->name, field, NAME_LEN - 1);
-                c->name[NAME_LEN - 1] = '\0';
-                break;
-            case 3: /* State */
-                strncpy(c->state, field, STATE_LEN - 1);
-                c->state[STATE_LEN - 1] = '\0';
-                break;
-            case 5: /* County FIPS Code */
-                c->countyFips = atoi(field);
-                break;
-            case 7: /* Latitude */
-                c->latitude = atof(field);
-                break;
-            case 8: /* Longitude */
-                c->longitude = atof(field);
-                break;
-            case 9: /* Population */
-                c->population = atoi(field);
-                break;
-            default:
-                break;
-        }
-        fieldIndex++;
+    char  *buffer   = NULL;
+    size_t capacity = 0;
+
+    /* Throw away the first line (column headers) */
+    if (getline(&buffer, &capacity, file) == -1) {
+        fclose(file);
+        free(buffer);
+        return 0;
     }
+
+    int count = 0;
+    while (count < n && getline(&buffer, &capacity, file) != -1) {
+        killNewline(buffer);
+
+        city *c = stringToCity(buffer);
+        if (c == NULL)
+            continue;
+
+        insertLast(v, c);
+        count++;
+    }
+
+    fclose(file);
+    free(buffer);
+    return count;
 }
 
 /* ------------------------------------------------------------------ */
@@ -158,62 +273,32 @@ void parseCityLine(char *line, City *c) {
 /* ------------------------------------------------------------------ */
 
 int main(void) {
-    char filename[1000];
-    char buffer[1000];  /* line buffer; large enough for any CSV row we expect */
-    int numCities;
+    /* numBuf is used to read the requested city count from the user. */
+    char numBuf[32];
 
-    printf("Enter the filepath: ");
-    fgets(filename, sizeof(filename), stdin);
-    killNewline(filename);
-
-    /* Open the specified filepath for reading */
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("Error opening the filepath: %s\n", filename);
-        return 1;
-    }
-
-    /* Throw away the first line (column headers) */
-    fgets(buffer, sizeof(buffer), file);
-
-    /* Ask the user how many cities to read */
     printf("How many cities: ");
-    fgets(buffer, sizeof(buffer), stdin);
-    numCities = atoi(buffer);
+    if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
+        return 0;
+    int numCities = atoi(numBuf);
 
-    /* Create the generic vector that will hold City * pointers */
     vector3 cities;
     vectorInit(&cities);
 
-    int cityCount = 0;
-    while (cityCount < numCities && fgets(buffer, sizeof(buffer), file) != NULL) {
-        killNewline(buffer);
-
-        City *c = malloc(sizeof(City));
-        if (c == NULL) {
-            printf("Error: unable to allocate memory for city\n");
-            fclose(file);
-            return 1;
-        }
-
-        parseCityLine(buffer, c);
-        insertLast(&cities, c);
-
-        cityCount++;
+    int found = readCityVector("../../Resources/uscities.csv", numCities, &cities);
+    if (found < 0) {
+        printf("Error opening uscities.csv\n");
+        vectorFree(&cities);
+        return 1;
     }
-
-    fclose(file);
 
     /* Print each city that was read in */
     for (int i = 0; i < cities.used; i++) {
-        City *c = (City *) cities.data[i];
-        printf("%s %s, population %d, at (%.4f, %.4f)\n",
-               c->name, c->state, c->population, c->latitude, c->longitude);
+        printCity((city *) cities.data[i]);
     }
 
-    /* Clean up: free each City struct, then free the vector itself */
+    /* Clean up: free each city struct, then free the vector's array */
     for (int i = 0; i < cities.used; i++) {
-        free(cities.data[i]);
+        freeCity((city *) cities.data[i]);
     }
     vectorFree(&cities);
 

@@ -293,7 +293,7 @@ int compareByLatitude(const void *a, const void *b) {
 int compareByFips(const void *a, const void *b) {
     const city *ca = (const city *) a;
     const city *cb = (const city *) b;
-    return ca->countyFips - cb->countyFips;
+    return ((ca->countyFips) - (cb->countyFips));
 }
 
 /*
@@ -454,8 +454,6 @@ int main(void) {
 
     bstNode *fipsTree = NULL;
     for (int i = 0; i < cities.used; i++) {
-        /* skipDuplicates = 1: ignore a city if its FIPS code is already
-         * present in the tree, per the Task 3 spec. */
         fipsTree = bstInsert(fipsTree, cities.data[i], compareByFips, 1);
     }
 

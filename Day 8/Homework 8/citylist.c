@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <limits.h>
 
 
 /*
@@ -98,6 +99,9 @@ static char *copyString(const char *src) {
 
 /*
  * Parse a CSV line into a heap-allocated city struct.
+ * Returns NULL if the line is malformed (missing name/state), so a
+ * blank or short line in the file doesn't turn into a phantom city
+ * with empty/zeroed fields.
  */
 city *stringToCity(char *line) {
     if (line == NULL)
@@ -115,6 +119,14 @@ city *stringToCity(char *line) {
 
     cursor  = getNextField(cursor, ',', field); /* city_ascii -> Name */
     c->name = copyString(field);
+
+    /* Reject the line early if the name field was empty -- a malformed
+     * or blank CSV row shouldn't silently become a "city" with no name. */
+    if (c->name == NULL || c->name[0] == '\0') {
+        free(c->name);
+        free(c);
+        return NULL;
+    }
 
     cursor     = getNextField(cursor, ',', field); /* state_id -> State */
     c->stateID = copyString(field);
@@ -223,21 +235,66 @@ void vectorFree(vector3 *v) {
 /* File I/O  */
 
 /*
- * Read up to n cities from filename into the given vector.
- * Returns the number of cities actually read (may be less than n if
- * the file runs out of lines first), or -1 if the file can't be opened.
+ * Prompt the user for a filepath, storing it into filename (a buffer
+ * of at least 1000 bytes, matching the field-buffer size used
+ * elsewhere for CSV parsing). Returns 0 on success, or -1 if stdin
+ * hit EOF, in which case filename is left untouched and the caller
+ * should not use it.
  */
-int readCityVector(char *filename, int n, vector3 *v) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL)
-        return -1;
+int readFilepath(char *filename) {
+    printf("Enter the filepath (or press Enter to search default locations): ");
+    if (fgets(filename, 1000, stdin) == NULL) {
+        return -1;   /* EOF on stdin */
+    }
+    killNewline(filename);
+    return 0;
+}
 
+/*
+ * Open the city CSV file. If userPath is non-empty, try it first.
+ * Otherwise (or if userPath doesn't open), fall back to a short list
+ * of likely locations, returning a FILE * for whichever one opens
+ * first, or NULL if none do. This keeps the program from failing
+ * outright just because it was compiled/run from a slightly
+ * different working directory than expected, while still letting
+ * the user point at an exact path if they have one.
+ */
+FILE *openCityFile(const char *userPath) {
+    if (userPath != NULL && userPath[0] != '\0') {
+        FILE *file = fopen(userPath, "r");
+        if (file != NULL) {
+            return file;
+        }
+    }
+
+    const char *candidatePaths[] = {
+        "../../Resources/uscities.csv",
+        "../Resources/uscities.csv",
+        "Resources/uscities.csv",
+        "uscities.csv"
+    };
+    int numCandidates = sizeof(candidatePaths) / sizeof(candidatePaths[0]);
+
+    for (int i = 0; i < numCandidates; i++) {
+        FILE *file = fopen(candidatePaths[i], "r");
+        if (file != NULL) {
+            return file;
+        }
+    }
+    return NULL;
+}
+
+/*
+ * Read up to n cities from an already-open file into the given vector.
+ * Returns the number of cities actually read (may be less than n if
+ * the file runs out of usable lines first).
+ */
+int readCityVector(FILE *file, int n, vector3 *v) {
     char  *buffer   = NULL;
     size_t capacity = 0;
 
     /* Throw away the first line (column headers) */
     if (getline(&buffer, &capacity, file) == -1) {
-        fclose(file);
         free(buffer);
         return 0;
     }
@@ -248,13 +305,12 @@ int readCityVector(char *filename, int n, vector3 *v) {
 
         city *c = stringToCity(buffer);
         if (c == NULL)
-            continue;
+            continue;   /* skip blank/malformed lines rather than storing a phantom city */
 
         insertLast(v, c);
         count++;
     }
 
-    fclose(file);
     free(buffer);
     return count;
 }
@@ -401,28 +457,63 @@ int binarySearchByFips(city **arr, int n, int targetFips) {
     return -1;
 }
 
+/*
+ * Prompt for and read the number of cities to load, re-prompting on
+ * blank/non-numeric/negative input instead of silently treating bad
+ * input as 0. Returns -1 only on EOF (stdin closed), which main()
+ * treats as a clean exit.
+ */
+int readCityCount(void) {
+    char inputBuf[32];
+
+    while (1) {
+        printf("How many cities: ");
+        if (fgets(inputBuf, sizeof(inputBuf), stdin) == NULL) {
+            return -1;   /* EOF on stdin */
+        }
+        killNewline(inputBuf);
+
+        char *endPtr;
+        long  value = strtol(inputBuf, &endPtr, 10);
+
+        /* Valid only if strtol consumed at least one digit, the rest of
+         * the line is empty, and the value is a sensible non-negative
+         * count. */
+        if (endPtr != inputBuf && *endPtr == '\0' && value >= 0 && value <= INT_MAX) {
+            return (int) value;
+        }
+
+        printf("Please enter a non-negative whole number.\n");
+    }
+}
+
 /* Main program */
 
 int main(void) {
-    /* numBuf is used to read the requested city count from the user. */
-    char numBuf[32];
+    char filename[1000];
+    if (readFilepath(filename) == -1) {
+        return 0;   /* EOF was hit while asking for the filepath */
+    }
 
-    printf("How many cities: ");
-    if (fgets(numBuf, sizeof(numBuf), stdin) == NULL)
-        return 0;
-    int numCities = atoi(numBuf);
+    int numCities = readCityCount();
+    if (numCities < 0) {
+        return 0;   /* EOF was hit while asking for the count */
+    }
 
     /* Task 1: read and print cities */
 
     vector3 cities;
     vectorInit(&cities);
 
-    int found = readCityVector("../../Resources/uscities.csv", numCities, &cities);
-    if (found < 0) {
+    FILE *cityFile = openCityFile(filename);
+    if (cityFile == NULL) {
         printf("Error opening uscities.csv\n");
         vectorFree(&cities);
         return 1;
     }
+
+    readCityVector(cityFile, numCities, &cities);
+    fclose(cityFile);
 
     for (int i = 0; i < cities.used; i++) {
         printCity((city *) cities.data[i]);
@@ -435,15 +526,23 @@ int main(void) {
         latTree = bstInsert(latTree, cities.data[i], compareByLatitude, 0);
     }
 
-    city **byLatitude = malloc(cities.used * sizeof(city *));
-    if (byLatitude == NULL) {
-        printf("Error: unable to allocate memory for latitude array\n");
-        return 1;
+    /* Guard against malloc(0): if no cities were read, there's nothing
+     * to sort or search, so skip straight to reporting "not found"
+     * instead of treating an empty result as an allocation failure. */
+    city **byLatitude = NULL;
+    if (cities.used > 0) {
+        byLatitude = malloc(cities.used * sizeof(city *));
+        if (byLatitude == NULL) {
+            printf("Error: unable to allocate memory for latitude array\n");
+            return 1;
+        }
+        int latIdx = 0;
+        bstInorderFill(latTree, byLatitude, &latIdx);
     }
-    int latIdx = 0;
-    bstInorderFill(latTree, byLatitude, &latIdx);
 
-    int nyByLat = linearSearchByName(byLatitude, cities.used, "New York");
+    int nyByLat = (cities.used > 0)
+                  ? linearSearchByName(byLatitude, cities.used, "New York")
+                  : -1;
     if (nyByLat >= 0) {
         printf("By latitude, New York is index %d\n", nyByLat);
     } else {
@@ -458,16 +557,23 @@ int main(void) {
     }
 
     int fipsCount = bstCount(fipsTree);
-    city **byFips = malloc(fipsCount * sizeof(city *));
-    if (byFips == NULL) {
-        printf("Error: unable to allocate memory for FIPS array\n");
-        return 1;
+
+    /* Same malloc(0) guard as above, applied to the FIPS-ordered array. */
+    city **byFips = NULL;
+    if (fipsCount > 0) {
+        byFips = malloc(fipsCount * sizeof(city *));
+        if (byFips == NULL) {
+            printf("Error: unable to allocate memory for FIPS array\n");
+            return 1;
+        }
+        int fipsIdx = 0;
+        bstInorderFill(fipsTree, byFips, &fipsIdx);
     }
-    int fipsIdx = 0;
-    bstInorderFill(fipsTree, byFips, &fipsIdx);
 
     int targetFips  = 36081;
-    int fipsFoundAt = binarySearchByFips(byFips, fipsCount, targetFips);
+    int fipsFoundAt = (fipsCount > 0)
+                      ? binarySearchByFips(byFips, fipsCount, targetFips)
+                      : -1;
     if (fipsFoundAt >= 0) {
         printf("By FIPS code, %s is index %d\n",
                byFips[fipsFoundAt]->name, fipsFoundAt);

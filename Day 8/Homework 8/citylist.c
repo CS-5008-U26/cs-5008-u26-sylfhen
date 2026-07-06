@@ -15,12 +15,7 @@
 #include <limits.h>
 
 
-/*
- * Struct to store city record fields.
- * name, stateID, countyFips, latitude, longitude, and population.
- * name/stateID are heap-allocated so we're not guessing at a fixed
- * buffer size for city/state names of unknown length.
- */
+/* Struct to store city record fields */
 typedef struct city {
     char   *name;
     char   *stateID;
@@ -31,9 +26,7 @@ typedef struct city {
 } city;
 
 
-/*
- * Strip trailing newline (and carriage return) from str.
- */
+/* Strip trailing newline (and carriage return) from str */
 void killNewline(char *str) {
     size_t len = strlen(str);
     if (len > 0 && str[len - 1] == '\n')
@@ -42,9 +35,8 @@ void killNewline(char *str) {
         str[--len] = '\0';
 }
 
-/*
- * Remove surrounding double-quotes from a field string, in place.
- */
+
+/* Remove surrounding double-quotes from a field string, in place.*/
 static void stripEnclosingQuotes(char *field) {
     size_t len = strlen(field);
     if (len >= 2 && field[0] == '"' && field[len - 1] == '"') {
@@ -85,9 +77,7 @@ static char *getNextField(char *start, char separator, char *out) {
     return cursor;
 }
 
-/*
- * Allocate a heap copy of src.
- */
+/* Allocate a heap copy of src.*/
 static char *copyString(const char *src) {
     size_t len  = strlen(src);
     char  *copy = malloc(len + 1);
@@ -111,7 +101,7 @@ city *stringToCity(char *line) {
     if (c == NULL)
         return NULL;
 
-    /* field is large enough to hold any single CSV field from this file */
+    /* field is large enough to hold any single CSV field from the file */
     char  field[1000];
     char *cursor = line;
 
@@ -120,7 +110,7 @@ city *stringToCity(char *line) {
     cursor  = getNextField(cursor, ',', field); /* city_ascii -> Name */
     c->name = copyString(field);
 
-    /* Reject the line early if the name field was empty -- a malformed
+    /* Reject the line early if the name field was empty; a malformed
      * or blank CSV row shouldn't silently become a "city" with no name. */
     if (c->name == NULL || c->name[0] == '\0') {
         free(c->name);
@@ -138,10 +128,10 @@ city *stringToCity(char *line) {
 
     cursor = getNextField(cursor, ',', field); /* county_name (skip) */
 
-    cursor       = getNextField(cursor, ',', field); /* lat */
+    cursor       = getNextField(cursor, ',', field); /* latitude */
     c->latitude  = atof(field);
 
-    cursor       = getNextField(cursor, ',', field); /* lng */
+    cursor       = getNextField(cursor, ',', field); /* longitude */
     c->longitude = atof(field);
 
     cursor        = getNextField(cursor, ',', field); /* population */
@@ -167,9 +157,7 @@ void printCity(city *c) {
            c->name, c->stateID, c->population, c->latitude, c->longitude);
 }
 
-/*
- * Free a city and its heap-allocated fields.
- */
+/* Free a city and its heap-allocated fields.*/
 void freeCity(city *c) {
     if (c == NULL)
         return;
@@ -179,18 +167,16 @@ void freeCity(city *c) {
 }
 
 /* Generic vector (Vector3 style: stores void * elements) */
-
 typedef struct {
     void **data;   /* array of pointers                  */
     int    used;   /* number of elements currently used  */
     int    size;   /* capacity of the data array          */
 } vector3;
 
-/*
- * Initialise a vector with a small starting capacity.
- */
+
+/* Initialise a vector with a small starting capacity.*/
 void vectorInit(vector3 *v) {
-    v->size = 4;                                  /* small starting size */
+    v->size = 4;    /* Using 4 is reasonable for small vectors if needs be to double */
     v->used = 0;
     v->data = malloc(v->size * sizeof(void *));    /* buffer sized for pointers, not ints */
     if (v->data == NULL) {
@@ -224,7 +210,6 @@ void insertLast(vector3 *v, void *x) {
 }
 
  /* Free the vector's backing array only (elements are freed separately */
- 
 void vectorFree(vector3 *v) {
     free(v->data);
     v->data = NULL;
@@ -235,14 +220,10 @@ void vectorFree(vector3 *v) {
 /* File I/O  */
 
 /*
- * Prompt the user for a filepath, storing it into filename (a buffer
- * of at least 1000 bytes, matching the field-buffer size used
- * elsewhere for CSV parsing). Returns 0 on success, or -1 if stdin
- * hit EOF, in which case filename is left untouched and the caller
- * should not use it.
+ * Prompt the user for a filepath, reading it into filename. Returns -1 on EOF, 0 otherwise.
  */
 int readFilepath(char *filename) {
-    printf("Enter the filepath (or press Enter to search default locations): ");
+    printf("Enter the filepath (or press Enter & I'll search default locations): ");
     if (fgets(filename, 1000, stdin) == NULL) {
         return -1;   /* EOF on stdin */
     }
@@ -254,10 +235,7 @@ int readFilepath(char *filename) {
  * Open the city CSV file. If userPath is non-empty, try it first.
  * Otherwise (or if userPath doesn't open), fall back to a short list
  * of likely locations, returning a FILE * for whichever one opens
- * first, or NULL if none do. This keeps the program from failing
- * outright just because it was compiled/run from a slightly
- * different working directory than expected, while still letting
- * the user point at an exact path if they have one.
+ * first, or NULL if none do. 
  */
 FILE *openCityFile(const char *userPath) {
     if (userPath != NULL && userPath[0] != '\0') {
@@ -325,14 +303,12 @@ typedef struct bstNode {
 
 /*
  * Comparator type: returns <0 if a belongs before b, 0 if equal (by the
- * ordering key), >0 if a belongs after b. Each BST we build is keyed on
- * a single field of the city struct, so we write one comparator per key.
+ * ordering key), >0 if a belongs after b. Each BST built is keyed on
+ * a single field of the city struct, hence one comparator per key.
  */
 typedef int (*compareFunc)(const void *a, const void *b);
 
-/*
- * Compare two cities by latitude.
- */
+/* Compare two cities by latitude.*/
 int compareByLatitude(const void *a, const void *b) {
     const city *ca = (const city *) a;
     const city *cb = (const city *) b;
@@ -343,21 +319,14 @@ int compareByLatitude(const void *a, const void *b) {
     return 0;
 }
 
-/*
- * Compare two cities by county FIPS code (as ints, not strings).
- */
+/* Compare two cities by county FIPS code (as ints, not strings).*/
 int compareByFips(const void *a, const void *b) {
     const city *ca = (const city *) a;
     const city *cb = (const city *) b;
     return ((ca->countyFips) - (cb->countyFips));
 }
 
-/*
- * Insert data into the BST rooted at root, ordered by cmp.
- * If skipDuplicates is non-zero and a node with an equal key already
- * exists, the new data is silently dropped (not inserted, not freed --
- * the caller still owns it via the vector).
- */
+/* Insert data into the BST rooted at root, ordered by cmp.*/
 bstNode *bstInsert(bstNode *root, void *data, compareFunc cmp, int skipDuplicates) {
     if (root == NULL) {
         bstNode *node = malloc(sizeof(bstNode));
@@ -388,9 +357,7 @@ bstNode *bstInsert(bstNode *root, void *data, compareFunc cmp, int skipDuplicate
     return root;
 }
 
-/*
- * Count the number of nodes in the BST.
- */
+/* Count the number of nodes in the BST.*/
 int bstCount(bstNode *root) {
     if (root == NULL)
         return 0;
@@ -410,9 +377,8 @@ void bstInorderFill(bstNode *root, city **arr, int *idx) {
     bstInorderFill(root->right, arr, idx);
 }
 
-/*
- * Free all BST nodes 
- */
+
+/* Free all BST nodes */
 void bstFree(bstNode *root) {
     if (root == NULL)
         return;
@@ -526,9 +492,8 @@ int main(void) {
         latTree = bstInsert(latTree, cities.data[i], compareByLatitude, 0);
     }
 
-    /* Guard against malloc(0): if no cities were read, there's nothing
-     * to sort or search, so skip straight to reporting "not found"
-     * instead of treating an empty result as an allocation failure. */
+    /* Guard against malloc(0) Edge case. If no cities were read,
+    then fail fast instead of treating an empty result as an allocation failure. */
     city **byLatitude = NULL;
     if (cities.used > 0) {
         byLatitude = malloc(cities.used * sizeof(city *));
@@ -550,7 +515,6 @@ int main(void) {
     }
 
     /* Task 3: BST by county FIPS + binary search */
-
     bstNode *fipsTree = NULL;
     for (int i = 0; i < cities.used; i++) {
         fipsTree = bstInsert(fipsTree, cities.data[i], compareByFips, 1);

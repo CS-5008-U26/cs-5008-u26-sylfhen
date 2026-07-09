@@ -41,107 +41,65 @@ int n6 =            5;
 
 /* Y O U R   S O R T   F U N C T I O N */
 
-void sortarray (int a[], int n) {
-    BSTNode* root = NULL;
-    for (int i = 0; i < n; i++) {
-      root = bstInsert(root, a[i]);
+typedef struct bstNode_struct {
+    int value;
+    struct bstNode_struct *left;
+    struct bstNode_struct *right;
+} BSTNode;
+
+static BSTNode *createBSTNode(int value) {
+    BSTNode *newNode = malloc(sizeof(BSTNode));
+    if (newNode == NULL) {
+        printf("malloc failed");
+        exit(1);
     }
-/*refill array with sorted values */
+    newNode->value = value;
+    newNode->left = NULL;
+    newNode->right = NULL;
+    return newNode;
+}
+
+static BSTNode *bstInsert(BSTNode *root, int value) {
+    if (root == NULL) {
+        return createBSTNode(value);
+    }
+    if (value < root->value) {
+        root->left = bstInsert(root->left, value);
+    } else {
+        root->right = bstInsert(root->right, value);
+    }
+    return root;
+}
+
+static void inorderTraversal(BSTNode *root, int a[], int *index) {
+    if (root == NULL) {
+        return;
+    }
+    inorderTraversal(root->left, a, index);
+    a[*index] = root->value;
+    (*index)++;
+    inorderTraversal(root->right, a, index);
+}
+
+static void freeBST(BSTNode *root) {
+    if (root == NULL) {
+        return;
+    }
+    freeBST(root->left);
+    freeBST(root->right);
+    free(root);
+}
+
+void sortarray(int a[], int n) {
+    BSTNode *root = NULL;
+    for (int i = 0; i < n; i++) {
+        root = bstInsert(root, a[i]);
+    }
+
     int index = 0;
     inorderTraversal(root, a, &index);
     freeBST(root);
-
-    /*setting up the bst structure*/
-    typedef struct bstNode_struct {
-        int value;
-        struct bstNode_struct *left;
-        struct bstNode_struct *right;
-    } BSTNode;
-
-/* function to create a new BST node */
-    BSTNode* createBSTNode(int value) {
-        BSTNode* newNode = (BSTNode*)malloc(sizeof(BSTNode));
-        if (newNode == NULL) {
-            printf("malloc failed");
-            exit(1);
-        }
-        newNode->value = value;
-        newNode->left = NULL;
-        newNode->right = NULL;
-        return newNode;
-    }
-
-bstNode *bstInsert(bstNode *root, int x) {
-    if (root == NULL) {
-        return createBSTNode(x);
-    }
-    if (x < root->value) {
-        root->left = bstInsert(root->left, x);
-    } else {
-        root->right = bstInsert(root->right, x);
-    }
-    return root;
-
-    /*function to insert a value into the BST*/
-    BSTNode* insertBST(BSTNode* root, int value) {
-        if (root == NULL) {
-            return createBSTNode(value);
-            if (newNode == NULL) {
-                printf("malloc failed");
-                exit(1);
-            }
-            newNode->value = value;
-            newNode->left = NULL;
-            newNode->right = NULL;
-            return newNode;
-        }
-        if (value < root->value) {
-            root->left = insertBST(root->left, value);
-        } else {
-            root->right = insertBST(root->right, value);
-        }
-        return root;
-    }
-
-    /*function to perform in-order traversal of the BST and fill the array*/
-    void inorderTraversal(BSTNode* root, int a[], int* index) {
-        if (root == NULL) {
-            return;
-        }
-        inorderTraversal(root->left, a, index);
-        a[*index] = root->value;
-        (*index)++;
-        inorderTraversal(root->right, a, index);
-    }
-
-    /*function to free the BST*/
-    void freeBST(BSTNode* root) {
-        if (root == NULL) {
-            return;
-        }
-        freeBST(root->left);
-        freeBST(root->right);
-        free(root);
-    }
 }
-
-/* U T I L I T Y   F U N C T I O N S */
-
-// printarray = print an array of ints
-// a is the array, n is the number of elements
-
-void printarray(int a[], int n) {
-    int numberToPrint = ((n < MAX_TO_PRINT) ? n : MAX_TO_PRINT);
-    for (int i=0; i < numberToPrint; i++) {
-        printf ("%d ", a[i]);
-    }
-    printf ("\n");
-}
-
-// genarray - return an array of random ints on the heap
-// numberofelements is how many elements in the array
-// the array is returned
-// don't forget to free the array when you are finished using it
 
 int *genarray(int numberofelements) {
     int *result = malloc (numberofelements * sizeof(int));
@@ -167,6 +125,14 @@ int *genarray(int numberofelements) {
 
 // timedsort - runs a sort and records the elapsed time
 // a is the array, n is how many elements
+
+void printarray(int a[], int n) {
+    int numberToPrint = ((n < MAX_TO_PRINT) ? n : MAX_TO_PRINT);
+    for (int i = 0; i < numberToPrint; i++) {
+        printf("%d ", a[i]);
+    }
+    printf("\n");
+}
 
 void timedsort (int a[], int n) {
     clock_t startTime = clock();        // get the start time
@@ -196,10 +162,9 @@ void testsort (int a[], int n, int expected[]) {
 }
 
 /* M A I N   F U N C T I O N */
-void main () {
+int main(void) {
     char buffer[100];
     int nelements;
-    int maxvalue;
     int *randomdata;
 
     srand(time(NULL));  // seed the random number generator
@@ -232,4 +197,6 @@ void main () {
             }
         }
     }
+
+    return 0;
 }

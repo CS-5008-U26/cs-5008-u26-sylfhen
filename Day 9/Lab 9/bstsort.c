@@ -43,8 +43,12 @@ int n6 =            5;
 
 void sortarray (int a[], int n) {
 
-    /* program your sort here */
-    /* start with a comment that tells what type of sort you are implementing */
+    /*setting up the bst structure*/
+    typedef struct bstNode {
+        int value;
+        struct bstNode *left;
+        struct bstNode *right;
+    } BSTNode;
 
     int x = 0;
     for (int i=0; i<n*n; i++) {

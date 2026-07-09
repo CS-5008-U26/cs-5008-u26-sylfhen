@@ -50,11 +50,47 @@ void sortarray (int a[], int n) {
         struct bstNode *right;
     } BSTNode;
 
-    int x = 0;
-    for (int i=0; i<n*n; i++) {
-        x *= 2;
+    /*function to insert a value into the BST*/
+    BSTNode* insertBST(BSTNode* root, int value) {
+        if (root == NULL) {
+            BSTNode* newNode = (BSTNode*)malloc(sizeof(BSTNode));
+            if (newNode == NULL) {
+                printf("malloc failed");
+                exit(1);
+            }
+            newNode->value = value;
+            newNode->left = NULL;
+            newNode->right = NULL;
+            return newNode;
+        }
+        if (value < root->value) {
+            root->left = insertBST(root->left, value);
+        } else {
+            root->right = insertBST(root->right, value);
+        }
+        return root;
     }
 
+    /*function to perform in-order traversal of the BST and fill the array*/
+    void inorderTraversal(BSTNode* root, int a[], int* index) {
+        if (root == NULL) {
+            return;
+        }
+        inorderTraversal(root->left, a, index);
+        a[*index] = root->value;
+        (*index)++;
+        inorderTraversal(root->right, a, index);
+    }
+
+    /*function to free the BST*/
+    void freeBST(BSTNode* root) {
+        if (root == NULL) {
+            return;
+        }
+        freeBST(root->left);
+        freeBST(root->right);
+        free(root);
+    }
 }
 
 /* U T I L I T Y   F U N C T I O N S */

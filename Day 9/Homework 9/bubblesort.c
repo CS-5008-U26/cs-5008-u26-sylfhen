@@ -150,7 +150,7 @@ void testsort (int a[], int n, int expected[]) {
 }
 
 /* M A I N   F U N C T I O N */
-void main () {
+int main () {
     char buffer[100];
     int nelements;
     int maxvalue;
@@ -230,4 +230,6 @@ void main () {
             }
         }
     }
+
+    return 0;
 }

@@ -226,8 +226,9 @@ int main () {
     int keepgoing = 1;
     while (keepgoing) {
         printf ("How many elements? ");
-        fgets(buffer, 100, stdin);
-        if (buffer[0] == '\n') {
+        if (fgets(buffer, 100, stdin) == NULL) {
+            keepgoing = 0;
+        } else if (buffer[0] == '\n') {
             keepgoing = 0;
         } else {
             nelements = atoi(buffer);
@@ -247,8 +248,9 @@ int main () {
     keepgoing = 1;
     while (keepgoing) {
         printf ("How many elements (sorted data)? ");
-        fgets(buffer, 100, stdin);
-        if (buffer[0] == '\n') {
+        if (fgets(buffer, 100, stdin) == NULL) {
+            keepgoing = 0;
+        } else if (buffer[0] == '\n') {
             keepgoing = 0;
         } else {
             nelements = atoi(buffer);
@@ -268,8 +270,9 @@ int main () {
     keepgoing = 1;
     while (keepgoing) {
         printf ("How many elements (reverse sorted data)? ");
-        fgets(buffer, 100, stdin);
-        if (buffer[0] == '\n') {
+        if (fgets(buffer, 100, stdin) == NULL) {
+            keepgoing = 0;
+        } else if (buffer[0] == '\n') {
             keepgoing = 0;
         } else {
             nelements = atoi(buffer);

@@ -6,7 +6,7 @@
 
 BUBBLE SORT         70000               (See note below)  90000
 
-SELECTION SORT      
+SELECTION SORT      124000               112500           119000
 
 INSERTION SORT
 

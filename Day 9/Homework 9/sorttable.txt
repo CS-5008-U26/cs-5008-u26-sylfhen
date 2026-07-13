@@ -8,12 +8,36 @@ BUBBLE SORT         70000               (See note below)  90000
 
 SELECTION SORT      124000               112500           119000
 
-INSERTION SORT
+INSERTION SORT      137500               (see note below)  97500
 
-MERGE SORT
+MERGE SORT          55000000            130000000         130000000
 
-QUICK SORT
+QUICK SORT          73500000             97000             109000
 
-BST SORT (no free)  
+BST SORT (no free)  11100000             122000            121000
 
-BST Sort (with free)    
+BST Sort (with free) 10400000            115000            114000
+
+note:
+1. All numbers n are approximations, trying to get as close as possible to 10s
+2. Bubble Sort and Selection Sort are exeptionally faster on sorted data
+than on random or reverse. This is due largely to their early-exit/early break
+optimizations. The N is so large it becomes impractical and takes up 
+significant memory.
+
+Quick Analysis:
+Selection sort is fairly consistent across due largely to the same n(n-1)/2
+comparisons regardless of input order.
+
+Merge sort O(n(logn))is faster and needed a higher N to reach 10s on sorted and reverse
+data. most likely from CPU branch prediction handling 
+the very regular "always take from 
+the left run" / "always take from the right run" comparison pattern 
+better than random data's unpredictable branching.
+
+Quicksort spread is widest due to the implementation's fixed last element pivot
+degrading to O(n^2) on already ordered input.
+
+Free vs No Free BST differences was negligible because the O(n^2) 
+on a degenerate tree dominates the runtime that the O(n) freeing cost 
+becomes negligible by comparison.

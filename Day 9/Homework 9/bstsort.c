@@ -147,7 +147,7 @@ void sortarray(int a[], int n) {
     }
     int index = 0;
     inorderTraversal(root, a, &index, n);
-    //freeBST(root, n);
+    freeBST(root, n); /* free the memory vs not free for comparison in sorttable.txt */
 }
 
 /* U T I L I T Y   F U N C T I O N S */

@@ -69,8 +69,8 @@ void heapifyDown(int *a, int size, int index) {
 
 /* heapifyUp assumes the heap is valid everywhere */
 void heapifyUp(int *a, int index) {
-    while (i > 0) {
-        int parent = (i - 1) / 2;
+    while (index > 0) {
+        int parent = (index - 1) / 2;
         if (a[index] <= a[parent]) {
             // heap property satisfied, we're done
             break;

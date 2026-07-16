@@ -46,14 +46,14 @@ void heapifyDown(int *a, int size, int index) {
     /*find the left child*/
     /*find the right child*/
     while (1) {
-        int left = 2 * index + 1;
-        int right = 2 * index + 2;
+        int left = (2 * index) + 1;
+        int right = (2 * index) + 2;
         int largest = index;
 
-        if (left < size && a[left] > a[largest]) {
+        if ((left < size ) && (a[left] > a[largest])) {
             largest = left;
         }
-        if (right < size && a[right] > a[largest]) {
+        if ((right < size) && (a[right] > a[largest])) {
             largest = right;
         }
 
@@ -83,21 +83,20 @@ void heapifyUp(int *a, int index) {
 /* Y O U R   S O R T   F U N C T I O N */
 
 void sortarray (int a[], int n) {
-#if BUILD_HEAP_TOP_DOWN
-    
-    for (int i = n / 2 - 1; i >= 0; i--) {
+    /* build the heap */
+    for (int i = (n / 2) - 1; i >= 0; i--) {
         heapifyDown(a, n, i);
     }
-#else
-    
+
+    /* loop through the rest of the elements, heapifying up each one */  
     for (int i = 1; i < n; i++) {
         heapifyUp(a, i);
     }
-#endif
-    for (int heapSize = n; heapSize > 1; heapSize--) {
-        
-        swap(a, 0, heapSize - 1);
-        heapifyDown(a, heapSize - 1, 0);
+/* sort the heap */
+    for (int size = n; size > 1; size--) {
+        /* swap the root of the heap with the last element in the heap */
+        swap(a, 0, size - 1);
+        heapifyDown(a, size - 1, 0);
     }
 }
 

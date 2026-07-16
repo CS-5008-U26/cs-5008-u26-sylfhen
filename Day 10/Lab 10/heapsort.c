@@ -43,10 +43,12 @@ void swap(int a[], int i, int j) {
 
 /* heapifyDown assume the heap is valid everywhere */
 void heapifyDown(int *a, int size, int index) {
+    /*find the left child*/
+    /*find the right child*/
     while (1) {
-        int left = 2 * i + 1;
-        int right = 2 * i + 2;
-        int largest = i;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+        int largest = index;
 
         if (left < size && a[left] > a[largest]) {
             largest = left;
@@ -55,13 +57,13 @@ void heapifyDown(int *a, int size, int index) {
             largest = right;
         }
 
-        if (largest == i) {
+        if (largest == index) {
             // heap property already satisfied here, we're done
             break;
         }
 
-        swap(a, i, largest);
-        i = largest;   // continue sinking down
+        swap(a, index, largest);
+        index = largest;   // continue sinking down
     }
 }
 
@@ -165,10 +167,9 @@ void testsort (int a[], int n, int expected[]) {
 }
 
 /* M A I N   F U N C T I O N */
-void main () {
+int main(void) {
     char buffer[100];
     int nelements;
-    int maxvalue;
     int *randomdata;
 
     srand(time(NULL));  // seed the random number generator
@@ -201,4 +202,6 @@ void main () {
             }
         }
     }
+
+    return 0;
 }

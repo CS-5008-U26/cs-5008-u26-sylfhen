@@ -185,7 +185,7 @@ size_t pq_dequeue_print(PriorityQueue *pq, long long requested) {
 
     clock_t endTime = clock();
     double elapsedTime = (double)(endTime - startTime) / CLOCKS_PER_SEC;
-    printf("/nRemoved %zu numbers. Elapsed time: %f seconds\n", count, elapsedTime);
+    printf("Removed %zu numbers. Elapsed time: %f seconds\n", count, elapsedTime);
     return count;
 }
 

@@ -90,3 +90,4 @@ quicksort
 selectionsort
 heapsort
 pqarray
+pqheap

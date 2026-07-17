@@ -245,13 +245,13 @@ int main() {
         pq_enqueue_random(&pq, to_add);
 
         long long to_remove = 0;
-        if (!get_input("/nHow many numbers to remove:  ", &to_remove)) {
+        if (!get_input("How many numbers to remove:  ", &to_remove)) {
             break;
         }
         size_t removed = pq_dequeue_print(&pq, to_remove);
 
         if (removed > 0 && pq.size == 0) {
-            printf("/nPriority queue is empty. Stopping.\n");
+            printf("Priority queue is empty. Stopping.\n");
             break;
         }
     }

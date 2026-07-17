@@ -146,12 +146,12 @@ void pq_enqueue_random(PriorityQueue *pq, long long requested) {
 
     int *newvals = genarray(count);
     if (newvals == NULL) {
-        fprintf(stderr, "Add of %zu numbers skipped.\n", count);
+        fprintf(stderr, "/nAdd of %zu numbers skipped.\n", count);
         return;
     }
 
     if (!pq_insert_array(pq, newvals, count)) {
-        fprintf(stderr, "Add of %zu numbers skipped.\n", count);
+        fprintf(stderr, "/nAdd of %zu numbers skipped.\n", count);
         free(newvals);
         return;
     }
@@ -159,7 +159,7 @@ void pq_enqueue_random(PriorityQueue *pq, long long requested) {
 
     clock_t endTime = clock();
     double elapsedTime = (double)(endTime - startTime) / CLOCKS_PER_SEC;
-    printf("Added %zu numbers. Elapsed time: %f seconds\n", count, elapsedTime);
+    printf("/nAdded %zu numbers. Elapsed time: %f seconds\n", count, elapsedTime);
 }
 /* pq_dequeue_print removes up to 'requested' numbers from the priority queue,
    prints them, and returns the actual number removed. If requested is larger
@@ -169,7 +169,7 @@ size_t pq_dequeue_print(PriorityQueue *pq, long long requested) {
     if (requested <= 0 || pq->size == 0) return 0;
     size_t count = (size_t)requested;
     if (count > pq->size) {
-        fprintf(stderr, "Only %zu numbers available; removing all of them.\n", pq->size);
+        fprintf(stderr, "/nOnly %zu numbers available; removing all of them.\n", pq->size);
         count = pq->size;
     }
 
@@ -185,7 +185,7 @@ size_t pq_dequeue_print(PriorityQueue *pq, long long requested) {
 
     clock_t endTime = clock();
     double elapsedTime = (double)(endTime - startTime) / CLOCKS_PER_SEC;
-    printf("Removed %zu numbers. Elapsed time: %f seconds\n", count, elapsedTime);
+    printf("/nRemoved %zu numbers. Elapsed time: %f seconds\n", count, elapsedTime);
     return count;
 }
 
@@ -218,11 +218,11 @@ int get_input(const char *prompt, long long *value) {
         long long v = strtoll(buffer, &endptr, 10);
 
         if (endptr == buffer) {
-            printf("Please enter a whole number, or press ENTER to stop.\n");
+            printf("/nPlease enter a whole number, or press ENTER to stop.\n");
             continue;
         }
         if (errno == ERANGE) {
-            printf("That number is out of range. Please enter a smaller number.\n");
+            printf("/nThat number is out of range. Please enter a smaller number.\n");
             continue;
         }
 
@@ -245,13 +245,13 @@ int main() {
         pq_enqueue_random(&pq, to_add);
 
         long long to_remove = 0;
-        if (!get_input("How many numbers to remove:  ", &to_remove)) {
+        if (!get_input("/nHow many numbers to remove:  ", &to_remove)) {
             break;
         }
         size_t removed = pq_dequeue_print(&pq, to_remove);
 
         if (removed > 0 && pq.size == 0) {
-            printf("Priority queue is empty. Stopping.\n");
+            printf("/nPriority queue is empty. Stopping.\n");
             break;
         }
     }

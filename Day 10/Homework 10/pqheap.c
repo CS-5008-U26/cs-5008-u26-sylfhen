@@ -81,18 +81,18 @@ int *genarray(size_t numberofelements) {
 
 /* Heap growth */
 
-/* ensure_capacity makes sure the backing store can hold at least 'needed'
+/* ensure_capacity makes sure the backing store can hold at least 
    more elements. Returns 1 on success, 0 on failure (overflow or
    allocation failure); on failure the queue is left unchanged.
 */
-int ensure_capacity(PriorityQueue *pq, size_t needed) {
-    if (needed == 0) return 1;
+int ensure_capacity(PriorityQueue *pq, size_t extra) {
+    if (extra == 0) return 1;
 
-    if (needed > SIZE_MAX - pq->size) {
+    if (extra > SIZE_MAX - pq->size) {
         fprintf(stderr, "Requested size overflows addressable range; add rejected.\n");
         return 0;
     }
-    size_t required = pq->size + needed;
+    size_t required = pq->size + extra;
 
     if (required <= pq->capacity) return 1; /* already big enough */
 
@@ -122,16 +122,16 @@ int ensure_capacity(PriorityQueue *pq, size_t needed) {
 
 /* Min-heap core */
 
-/* heapify_up restores the heap property by moving the element at 'here'
+/* heapify_up restores the heap property by moving the element at index
    up the tree until it is in the correct position. */
-void heapify_up(int a[], size_t here) {
-    while (here > 0) {
-        size_t parent = (here - 1) / 2;
-        if (a[here] < a[parent]) {
-            int tmp = a[here];
-            a[here] = a[parent];
+void heapify_up(int a[], size_t index) {
+    while (index > 0) {
+        size_t parent = (index - 1) / 2;
+        if (a[index] < a[parent]) {
+            int tmp = a[index];
+            a[index] = a[parent];
             a[parent] = tmp;
-            here = parent;
+            index = parent;
         } else {
             break;
         }
@@ -139,11 +139,11 @@ void heapify_up(int a[], size_t here) {
 }
 
 /* heapify_down assumes the heap is valid everywhere except possibly at 'here' */
-void heapify_down(int a[], size_t n, size_t here) {
+void heapify_down(int a[], size_t n, size_t index) {
     while (1) {
-        size_t left = 2 * here + 1;
-        size_t right = 2 * here + 2;
-        size_t smallest = here;
+        size_t left = 2 * index + 1;
+        size_t right = 2 * index + 2;
+        size_t smallest = index;
 
         if (left < n && a[left] < a[smallest]) {
             smallest = left;
@@ -151,13 +151,13 @@ void heapify_down(int a[], size_t n, size_t here) {
         if (right < n && a[right] < a[smallest]) {
             smallest = right;
         }
-        if (smallest == here) {
+        if (smallest == index) {
             break;
         }
-        int tmp = a[here];
-        a[here] = a[smallest];
+        int tmp = a[index];
+        a[index] = a[smallest];
         a[smallest] = tmp;
-        here = smallest;
+        index = smallest;
     }
 }
 

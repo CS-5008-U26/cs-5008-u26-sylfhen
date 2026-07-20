@@ -86,17 +86,17 @@ int *genarray(size_t numberofelements) {
 /* Priority queue operations */
 
 /* ensure_capacity function ensures that the priority queue has enough capacity
-   to hold 'needed' additional elements. Returns 1 on success, 0 on failure.
+   to hold additional elements. Returns 1 on success, 0 on failure.
 */
-int ensure_capacity(PriorityQueue *pq, size_t needed) {
-    if (needed == 0) return 1;
+int ensure_capacity(PriorityQueue *pq, size_t extra) {
+    if (extra == 0) return 1;
 
-    // overflow check: pq->size + needed must not wrap size_t
-    if (needed > SIZE_MAX - pq->size) {
+    // overflow check: pq->size + extra must not wrap
+    if (extra > SIZE_MAX - pq->size) {
         fprintf(stderr, "Requested size overflows addressable range; add rejected.\n");
         return 0;
     }
-    size_t required = pq->size + needed;
+    size_t required = pq->size + extra;
 
     if (required <= pq->capacity) return 1; /* already big enough */
 
@@ -212,7 +212,7 @@ int get_input(const char *prompt, long long *value) {
             int c;
             while ((c = getchar()) != '\n' && c != EOF) { /* discard */ }
         }
-
+/* convert the string to a long long int */
         char *endptr;
         errno = 0;
         long long v = strtoll(buffer, &endptr, 10);

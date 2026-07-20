@@ -1,5 +1,5 @@
 10-SECOND N VALUES
 
-                    heapify_up             heapify_down
+                    ADD Elements           REMOVE Elements
 pqarray             65000000                N is impractically large
 pqheap              295000000               18000000  

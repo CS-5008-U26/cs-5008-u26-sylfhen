@@ -11,7 +11,7 @@
 
 /* Constants */
 #define INITIAL_CAPACITY 1000
-#define MAX_VALUE 100000000     // max value in randomly generated data
+#define MAX_VALUE 1000000000     // max value in randomly generated data
 #define MAX_TO_PRINT 100        // cap how many removed numbers we print at once
 
 /* Priority Queue Structure */

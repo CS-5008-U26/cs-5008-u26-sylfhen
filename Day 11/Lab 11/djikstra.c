@@ -169,7 +169,7 @@ void visit (city *c) {
     }   
 }
 
-// trace back the path from the indicated city
+// trace back the path from the indicated city using recursion, printing the names of the cities along the way
 void traceBack (city *c) {
     if (c->cityBeforeThis != NULL) {
         traceBack(c->cityBeforeThis);

@@ -140,21 +140,58 @@ for (int i=0; i<nCities; i++) {
 
 // get the next city to visit
 city *nextToVisit() {
+    for (int i=0; i<nCities; i++) {
+        city *c = cityList[i];
+        if (!c->visited == 0) {
+            if (c->timeToGetHere < INT_MAX) {
+            return c;
+        }
+    }
+    return NULL;
 }
 
 // visit the indicated city
 void visit (city *c) {
-
+    for (int i=0; i<c->nLinks; i++) {
+        city *linkedCity = c->linkCity[i];
+        if (linkedCity->visited == 0) {
+            int timeToGetHere = c->timeToGetHere + c->linkMinutes[i];
+            if (timeToGetHere < linkedCity->timeToGetHere) {
+                linkedCity->timeToGetHere = timeToGetHere;
+                linkedCity->cityBeforeThis = c;
+            }
+        }
+    }   
 }
 
 // trace back the path from the indicated city
 void traceBack (city *c) {
-    
+    if (c->cityBeforeThis != NULL) {
+        traceBack(c->cityBeforeThis);
+    }
+    printf("%s\n", c->name);    
 }
 
 // Compute the shortest path from the start city to the end city
 void dijkstra (char *startName, char *endName) {
+    city *start = lookupCity(startName);
+    city *end = lookupCity(endName);
 
+    prepareForDijkstra();
+   
+    start->timeToGetHere = 0;
+    
+    printf("Finding shortest path from %s to %s\n", start->name, end->name);
+
+    while (1) {
+        city *currentCity = nextToVisit();
+        if (currentCity == NULL) {
+            break; // no more cities to visit
+        }
+        visit(currentCity);
+    }
+
+    traceBack(end);
 }
 
 /***   M A I N   ***/

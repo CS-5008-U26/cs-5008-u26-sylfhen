@@ -22,7 +22,7 @@
 // FOR EACH CITY
 typedef struct cityStruct {
     char *name;             // the name of the city
-    
+    /*prepare for Dijkstra*/
     // Links to other cities
     int nLinks;                         // number of links
     struct cityStruct *linkCity[MAX_LINKS];    // pointer to the linked city node
@@ -130,12 +130,16 @@ void setupCityList () {
 
 // prepare the city data for running Dijkstra's Algorithm
 void prepareForDijkstra () {
-
+for (int i=0; i<nCities; i++) {
+        city *c = cityList[i];
+        c->visited = 0;
+        c->timeToGetHere = INT_MAX;
+        c->cityBeforeThis = NULL;
+    }   
 }
 
 // get the next city to visit
 city *nextToVisit() {
-
 }
 
 // visit the indicated city
@@ -161,9 +165,9 @@ void main () {
     setupCityList();
 
     /* for debugging of the city list setup */
-    /* for (int i=0; i<nCities; i++) {
+     for (int i=0; i<nCities; i++) {
         printCity(cityList[i]);
-    } */
+    } 
 
     fgets(buffer,100,stdin);
 }

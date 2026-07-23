@@ -140,18 +140,23 @@ for (int i=0; i<nCities; i++) {
 
 // get the next city to visit
 city *nextToVisit() {
+    city *nextVist = NULL;
+
     for (int i=0; i<nCities; i++) {
         city *c = cityList[i];
-        if (!c->visited == 0) {
-            if (c->timeToGetHere < INT_MAX) {
-            return c;
+        if (!c->visited && c->timeToGetHere < INT_MAX) {
+            if (nextVisit == NULL || c->timeToGetHere < nextVisit->timeToGetHere) {
+                nextVisit = c;
+            }
         }
     }
-    return NULL;
+    return nextVisit;
 }
 
 // visit the indicated city
 void visit (city *c) {
+    c->visited = 1;
+
     for (int i=0; i<c->nLinks; i++) {
         city *linkedCity = c->linkCity[i];
         if (linkedCity->visited == 0) {

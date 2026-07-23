@@ -140,7 +140,7 @@ for (int i=0; i<nCities; i++) {
 
 // get the next city to visit
 city *nextToVisit() {
-    city *nextVist = NULL;
+    city *nextVisit = NULL;
 
     for (int i=0; i<nCities; i++) {
         city *c = cityList[i];

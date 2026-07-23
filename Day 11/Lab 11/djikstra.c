@@ -158,12 +158,12 @@ void visit (city *c) {
     c->visited = 1;
 
     for (int i=0; i<c->nLinks; i++) {
-        city *linkedCity = c->linkCity[i];
-        if (linkedCity->visited == 0) {
+        city *neighbour = c->linkCity[i];
+        if (neighbour->visited == 0) {
             int timeToGetHere = c->timeToGetHere + c->linkMinutes[i];
-            if (timeToGetHere < linkedCity->timeToGetHere) {
-                linkedCity->timeToGetHere = timeToGetHere;
-                linkedCity->cityBeforeThis = c;
+            if (timeToGetHere < neighbour->timeToGetHere) {
+                neighbour->timeToGetHere = timeToGetHere;
+                neighbour->cityBeforeThis = c;
             }
         }
     }   
@@ -195,7 +195,7 @@ void dijkstra (char *startName, char *endName) {
         }
         visit(currentCity);
     }
-
+    printf("Shortest time: %sd minutes\n", end->timeToGetHere);
     traceBack(end);
 }
 

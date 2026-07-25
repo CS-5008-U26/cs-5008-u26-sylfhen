@@ -20,6 +20,7 @@
 #define TOP_N_CITIES   200   /* we only consider the 200 largest cities   */
 #define MAX_CAPACITY   200   /* total character budget for names          */
 #define MAX_NAME_LEN   100   /* generous buffer for a single city name    */
+#define MAX_FIELD_LEN  1000  /* generous buffer for a single raw CSV field */
 
 /* City struct: name, nameLen (weight), population (value) */
 typedef struct City{
@@ -38,41 +39,60 @@ static void killNewline(char *str) {
         str[--len] = '\0';
 }
 
-/* Remove surrounding double-quotes from a field string, in place. */
-static void stripEnclosingQuotes(char *field) {
-    size_t len = strlen(field);
-    if (len >= 2 && field[0] == '"' && field[len - 1] == '"') {
-        memmove(field, field + 1, len - 2);
-        field[len - 2] = '\0';
-    }
-}
-
 /*
  * Extract the next comma-delimited field from 'start' into 'out',
  * respecting quoted fields (so commas inside quotes are not treated
  * as separators). Returns a pointer just past the field, ready for
  * the next call.
  */
-static char *getNextField(char *start, char separator, char *out) {
+static char *getNextField(char *start, char separator, char *out, size_t outSize) {
     if (*start == '\0') {
         out[0] = '\0';
         return start;
     }
 
-    int   inQuotes = 0;
-    char *cursor   = start;
-    char *write    = out;
+    int     inQuotes = 0;
+    char   *cursor   = start;
+    size_t  written   = 0;
+
+    /* A field that begins with a quote is a properly quoted CSV
+     * field: consume the opening quote itself rather than copying it. */
+    if (*cursor == '"') {
+        inQuotes = 1;
+        cursor++;
+    }
 
     while (*cursor != '\0') {
-        if (*cursor == '"') {
-            inQuotes = !inQuotes;
-        } else if (*cursor == separator && !inQuotes) {
-            break;
+        if (inQuotes) {
+            if (*cursor == '"') {
+                if (*(cursor + 1) == '"') {
+                    /* escaped quote ("") literal '"' */
+                    if (written + 1 < outSize)
+                        out[written++] = '"';
+                    cursor += 2;
+                    continue;
+                }
+                /* lone quote ends the quoted section */
+                inQuotes = 0;
+                cursor++;
+                continue;
+            }
+        } else {
+            if (*cursor == separator)
+                break;
+            if (*cursor == '"') {
+                /* a quote appearing mid-field (outside quotes) starts
+                 * a new quoted run */
+                inQuotes = 1;
+                cursor++;
+                continue;
+            }
         }
-        *write++ = *cursor++;
+        if (written + 1 < outSize)
+            out[written++] = *cursor;
+        cursor++;
     }
-    *write = '\0';
-    stripEnclosingQuotes(out);
+    out[written] = '\0';
 
     if (*cursor == separator)
         return cursor + 1;
@@ -82,33 +102,41 @@ static char *getNextField(char *start, char separator, char *out) {
 
 /*
  * Parse one CSV line into City *out. Returns 0 on success, -1 if the
- * line is malformed (e.g. blank line, missing name) so callers can
- * skip it instead of storing a phantom city.
+ * line is malformed (e.g. blank line, missing name, or a population
+ * field that isn't a clean non-negative integer) so it can be skipped
+ * instead of storing a phantom city.
  */
 static int parseCityLine(char *line, City *out) {
-    char  field[1000];
+    char  field[MAX_FIELD_LEN];
     char *cursor = line;
 
-    cursor = getNextField(cursor, ',', field);           /* city (raw, skip)   */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* city (raw, skip)   */
 
-    cursor = getNextField(cursor, ',', field);           /* city_ascii -> name */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* city_ascii -> name */
     if (field[0] == '\0')
         return -1;                                       /* blank/malformed    */
     strncpy(out->name, field, MAX_NAME_LEN - 1);
     out->name[MAX_NAME_LEN - 1] = '\0';
     out->nameLen = (int) strlen(out->name);
 
-    cursor = getNextField(cursor, ',', field);           /* state_id (skip)    */
-    cursor = getNextField(cursor, ',', field);           /* state_name (skip)  */
-    cursor = getNextField(cursor, ',', field);           /* county_fips (skip) */
-    cursor = getNextField(cursor, ',', field);           /* county_name (skip) */
-    cursor = getNextField(cursor, ',', field);           /* lat (skip)         */
-    cursor = getNextField(cursor, ',', field);           /* lng (skip)         */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* state_id (skip)    */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* state_name (skip)  */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* county_fips (skip) */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* county_name (skip) */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* lat (skip)         */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* lng (skip)         */
 
-    cursor = getNextField(cursor, ',', field);           /* population         */
+    cursor = getNextField(cursor, ',', field, sizeof(field));           /* population         */
     if (field[0] == '\0')
         return -1;
-    out->population = atoll(field);
+
+    /* Validate the population field with strtoll() so
+    as to detect whether anything went wrong. */
+    char     *endPtr;
+    long long pop = strtoll(field, &endPtr, 10);
+    if (endPtr == field || *endPtr != '\0' || pop < 0)
+        return -1;   /* not a clean non-negative integer -> reject the line */
+    out->population = pop;
 
     return 0;
 }
@@ -208,7 +236,7 @@ static void solveKnapsack(City cities[], int n) {
     static long long dp[TOP_N_CITIES + 1][MAX_CAPACITY + 1];
 
     for (int w = 0; w <= MAX_CAPACITY; w++)
-        dp[0][w] = 0;   /* base case: no cities considered -> nothing saved */
+        dp[0][w] = 0;   /* base case: no cities considered & nothing saved */
 
     for (int i = 1; i <= n; i++) {
         int       weight = cities[i - 1].nameLen;
@@ -272,7 +300,7 @@ int main(void) {
         return 1;
     }
 
-    /* Sort every city we read by population, descending, so we can
+    /* Sort every city we read by population, descending order, so we can
      * pick out the true 200 LARGEST cities (not just the first 200
      * rows encountered in the file). */
     qsort(allCities, totalCount, sizeof(City), compareByPopulationDesc);

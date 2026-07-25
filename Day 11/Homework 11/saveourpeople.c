@@ -1,15 +1,12 @@
 /*
  * saveourpeople.c
  *
- * The programme checks among the 200 largest US cities
- * (by population), find the subset whose name lengths sum to at
- * most 200 characters that maximizes total population saved.
- *
- * Using The 0/1 Knapsack algorithm:
- *   - "weight" of a city  = number of characters in its name
- *   - "value"  of a city  = its population
- *   - "capacity" of the knapsack = 200 (characters)
- *
+ * The programme uses the bottom up tabulation method
+ * of dynamic programming for 0/1 knapsack problem.
+ * The DP table stores the maximum population obtainable
+ * using the first i cities for every character budget from 0 to 200.
+ * After filling the table iteratively, the optimal set of cities 
+ * is reconstructed by backtracking through the completed table.
  */
 
 /*Standard Library includes */

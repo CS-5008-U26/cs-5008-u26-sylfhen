@@ -191,8 +191,8 @@ int connectCities(const char *city1, const char *city2) {
     return 1;
 }
 
-/* CSV LOADING */
 
+/* CSV LOADING */
 /* Strip surrounding double-quotes from a field string, in place. */
 static void stripEnclosingQuotes(char *field) {
     size_t len = strlen(field);
@@ -291,13 +291,7 @@ int parseCityLine(char *line, char *nameOut, double *latOut, double *lngOut) {
 }
 
 /* Pass 1 of the two-pass loader: counts how many data lines in the
- * already-open file parse as valid cities, WITHOUT storing anything.
- * This lets loadCitiesFromCSV() allocate the `cities` array at exactly
- * the right size before any city is stored, so pass 2 never needs to
- * grow/realloc the array - which matters because once real cities
- * (and later, edges) start pointing at array slots, a realloc that
- * moves the block would silently invalidate every pointer already
- * handed out. */
+ * already-open file parse as valid cities */
 static int countValidCityLines(FILE *fp) {
     char  *buffer   = NULL;
     size_t bufCap   = 0;
@@ -343,15 +337,7 @@ static FILE *openCityCSV(void) {
     return NULL;
 }
 
-/*
- * Loads cities from canadacities.csv using a two-pass approach:
- *   Pass 1 (countValidCityLines): count valid data rows.
- *   Pass 2: allocate `cities` at exactly that size, rewind, and fill
- *           it in via addCity().
- * Returns 1 on success (cityCount > 0), 0 if the file couldn't be
- * found/opened or contained no valid rows (caller should fall back
- * to the built-in dataset in that case).
- */
+
 int loadCitiesFromCSV(void) {
     FILE *fp = openCityCSV();
     if (fp == NULL) {
@@ -450,8 +436,7 @@ static FILE *openEdgesCSV(void) {
  * pre-allocated in a contiguous array; each one is just a separate
  * malloc'd linked-list node added via connectCities(). Returns 1 if
  * at least one edge was successfully connected, 0 if the file
- * couldn't be found/opened or contained no usable rows (caller should
- * fall back to the built-in road list in that case).
+ * couldn't be found/opened or contained no usable rows
  */
 int loadEdgesFromCSV(void) {
     FILE *fp = openEdgesCSV();
@@ -496,6 +481,7 @@ void freeGraph(void) {
     }
 }
 
+
 /* DISPLAY GRAPH */
 
 void printGraph(void) {
@@ -519,6 +505,7 @@ void printGraph(void) {
         printf("\n");
     }
 }
+
 
 /* SHARED HELPERS */
 
@@ -547,7 +534,9 @@ void printPath(City *destination) {
     printf("%s", destination->name);
 }
 
-/* BINARY MIN-HEAP (lazy deletion) */
+/***********************
+       BINARY MIN-HEAP (lazy deletion)
+************************/
 
 /*
  * A small binary min-heap keyed on `priority`, storing city indices.
@@ -648,7 +637,6 @@ int heapPop(MinHeap *h, int *cityIdxOut) {
     heapSiftDown(h, 0);
     return 1;
 }
-
 
 /* BFS  (unweighted) */
 
@@ -877,7 +865,7 @@ void printDijkstraResult(City *start, City *end, int explored) {
     printf("Cities explored: %d\n", explored);
 }
 
-/* A* Algorithm */
+/* A* Algorithm*/
 
 double heuristic(City *current, City *goal) {
     return haversine(current->latitude, current->longitude,
@@ -888,8 +876,7 @@ double heuristic(City *current, City *goal) {
  * heuristic to goal, using the same binary min-heap as Dijkstra (keyed
  * on f(n) = g(n) + h(n) instead of just g(n)). Returns the number of
  * cities visited (settled) by the time the goal is reached. The
- * shortest distance ends up in goal->distance (the real path cost,
- * not the f-score). */
+ * shortest distance ends up in goal->distance */
 int aStar(City *start, City *goal) {
     resetWeightedState();
     int explored = 0;
@@ -952,9 +939,7 @@ void printAStarResult(City *start, City *end, int explored) {
     printf("Cities explored: %d\n", explored);
 }
 
-/***********************
-       COMPARISON
-************************/
+/* COMPARISON SECTION */
 
 void compareAlgorithms(double dijkstraDistance, int dijkstraNodes,
                         double aStarDistance, int aStarNodes) {
@@ -1021,6 +1006,93 @@ void runComparison(City *start, City *goal) {
     compareAlgorithms(dijkstraDistance, dijkstraExplored, aStarDistance, aStarExplored);
 }
 
+/* Runs BFS and DFS between the same two cities, prints both results,
+ * then a short comparison of path length (edges) and cities explored.
+ * Unlike Dijkstra vs. A* (which must always agree on distance), BFS
+ * and DFS can legitimately disagree on path length - BFS is
+ * guaranteed fewest hops, DFS is not - so the comparison here reports
+ * that difference instead of flagging it as an error. */
+void runBFSvsDFS(City *start, City *goal) {
+    int *bfsPath = malloc((size_t)cityCount * sizeof(int));
+    if (bfsPath == NULL) {
+        printf("Error: unable to allocate memory for BFS\n");
+        exit(1);
+    }
+    int bfsExplored;
+    int bfsHops = bfs(start, goal, bfsPath, &bfsExplored);
+
+    printf("\n============================\n");
+    printf("BFS RESULT\n");
+    printf("============================\n\n");
+    if (bfsHops == -1) {
+        printf("No path exists from %s to %s.\n", start->name, goal->name);
+    } else {
+        printf("Route (fewest hops, %d edges):\n", bfsHops - 1);
+        for (int i = 0; i < bfsHops; i++) {
+            printf("%s%s", cities[bfsPath[i]].name, (i < bfsHops - 1) ? " -> " : "\n");
+        }
+    }
+    printf("Cities explored: %d\n", bfsExplored);
+    free(bfsPath);
+
+    int *dfsVisited = calloc((size_t)cityCount, sizeof(int));
+    int *dfsPath    = malloc((size_t)cityCount * sizeof(int));
+    if (dfsVisited == NULL || dfsPath == NULL) {
+        printf("Error: unable to allocate memory for DFS\n");
+        exit(1);
+    }
+    int dfsPathLen  = 0;
+    int dfsExplored = 0;
+    int dfsFound = dfsHelper(start, goal, dfsVisited, dfsPath, &dfsPathLen, &dfsExplored);
+
+    printf("\n============================\n");
+    printf("DFS RESULT\n");
+    printf("============================\n\n");
+    if (!dfsFound) {
+        printf("No path exists from %s to %s.\n", start->name, goal->name);
+    } else {
+        printf("A path found by DFS (not necessarily shortest):\n");
+        for (int i = 0; i < dfsPathLen; i++) {
+            printf("%s%s", cities[dfsPath[i]].name, (i < dfsPathLen - 1) ? " -> " : "\n");
+        }
+    }
+    printf("Cities explored: %d\n", dfsExplored);
+    free(dfsVisited);
+    free(dfsPath);
+
+    printf("\n============================\n");
+    printf("BFS vs. DFS COMPARISON\n");
+    printf("============================\n\n");
+
+    if (bfsHops == -1 && !dfsFound) {
+        printf("Neither BFS nor DFS found a path from %s to %s.\n", start->name, goal->name);
+        return;
+    }
+    if (bfsHops == -1 || !dfsFound) {
+        printf("Note: one algorithm found a path and the other didn't; something is "
+               "wrong, since both search the same connected graph.\n");
+        return;
+    }
+
+    int bfsEdges = bfsHops - 1;
+    int dfsEdges = dfsPathLen - 1;
+
+    printf("BFS path length: %d edges\n", bfsEdges);
+    printf("DFS path length: %d edges\n", dfsEdges);
+    printf("\n");
+    printf("BFS explored: %d cities\n", bfsExplored);
+    printf("DFS explored: %d cities\n", dfsExplored);
+    printf("\n");
+
+    if (dfsEdges > bfsEdges) {
+        printf("DFS took %d more edge(s) than the guaranteed-shortest BFS route "
+               "(DFS does not guarantee the fewest hops).\n", dfsEdges - bfsEdges);
+    } else {
+        printf("DFS happened to find a path just as short as BFS this time "
+               "(not guaranteed in general).\n");
+    }
+}
+
 void printMenu(void) {
     printf("\n==================== MENU ====================\n");
     printf(" 1. Print the full city graph\n");
@@ -1029,12 +1101,16 @@ void printMenu(void) {
     printf(" 4. Run Dijkstra's Algorithm between two cities\n");
     printf(" 5. Run A* Search between two cities\n");
     printf(" 6. Compare Dijkstra vs. A*\n");
+    printf(" 7. Compare BFS vs. DFS\n");
     printf(" 0. Exit\n");
     printf("===============================================\n");
     printf("Choice: ");
 }
 
-/* MAIN */
+/***********************
+          MAIN
+************************/
+
 int main(void) {
     if (!loadCitiesFromCSV()) {
         printf("Error: could not find/read canadacities.csv in any known location.\n");
@@ -1103,6 +1179,13 @@ int main(void) {
                 goal  = promptForCity("Destination city: ");
                 if (goal == NULL) { running = 0; break; }
                 runComparison(start, goal);
+                break;
+            case 7:
+                start = promptForCity("Start city: ");
+                if (start == NULL) { running = 0; break; }
+                goal  = promptForCity("Destination city: ");
+                if (goal == NULL) { running = 0; break; }
+                runBFSvsDFS(start, goal);
                 break;
             case 0:
                 running = 0;

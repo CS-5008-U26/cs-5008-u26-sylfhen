@@ -3,11 +3,6 @@
  *
  * FINAL PROJECT: Finding Shortest Routes Between Major Canadian Cities
  *                Using Graph Algorithms
- *
- * Cities are loaded from Resources/canadacities.csv (a simplemaps-style
- * CSV with columns: city,city_ascii,province_id,province_name,lat,lng,
- * population,...). If that file can't be found, the program falls back
- * to a small built-in dataset of 17 cities so it always runs.
  */
 
 #define _POSIX_C_SOURCE 200809L  /* for strcasecmp and getline */
@@ -196,9 +191,7 @@ int connectCities(const char *city1, const char *city2) {
     return 1;
 }
 
-/***********************
-       CSV LOADING
-************************/
+/* CSV LOADING */
 
 /* Strip surrounding double-quotes from a field string, in place. */
 static void stripEnclosingQuotes(char *field) {
@@ -403,9 +396,7 @@ int loadCitiesFromCSV(void) {
     return cityCount > 0;
 }
 
-/***********************
-       EDGE (ROAD) CSV LOADING
-************************/
+/* EDGE (ROAD) CSV LOADING */
 
 /*
  * Parses one edge CSV line, expecting the format:
@@ -493,66 +484,6 @@ int loadEdgesFromCSV(void) {
     return edgesConnected > 0;
 }
 
-/***********************
-       FALLBACK DATASET
-************************/
-
-/* Used only if canadacities.csv can't be found, so the program still
- * runs (with a smaller, hardcoded set of 17 major cities) instead of
- * failing outright. */
-void buildCanadianCitiesFallback(void) {
-    addCity("Vancouver",    49.2827, -123.1207);
-    addCity("Victoria",     48.4284, -123.3656);
-    addCity("Kelowna",      49.8880, -119.4960);
-    addCity("Calgary",      51.0447, -114.0719);
-    addCity("Edmonton",     53.5461, -113.4938);
-    addCity("Saskatoon",    52.1332, -106.6700);
-    addCity("Regina",       50.4452, -104.6189);
-    addCity("Winnipeg",     49.8951,  -97.1384);
-    addCity("Thunder Bay",  48.3809,  -89.2477);
-    addCity("Sudbury",      46.4917,  -80.9930);
-    addCity("Toronto",      43.6532,  -79.3832);
-    addCity("Ottawa",       45.4215,  -75.6972);
-    addCity("Montreal",     45.5017,  -73.5673);
-    addCity("Quebec City",  46.8139,  -71.2080);
-    addCity("Fredericton",  45.9636,  -66.6431);
-    addCity("Moncton",      46.0878,  -64.7782);
-    addCity("Halifax",      44.6488,  -63.5752);
-}
-
-/***********************
-       BUILD GRAPH (fallback only)
-************************/
-
-/* Used only if canada_edges.csv can't be found - the normal path is
- * loadEdgesFromCSV() above. This hardcoded list is just a backup so
- * the program still has a usable road network if the data file is
- * missing, mirroring buildCanadianCitiesFallback(). */
-void buildGraphFallback(void) {
-    connectCities("Vancouver", "Victoria");
-    connectCities("Vancouver", "Kelowna");
-    connectCities("Vancouver", "Calgary");     /* direct alternate route */
-    connectCities("Kelowna", "Calgary");
-    connectCities("Calgary", "Edmonton");
-    connectCities("Calgary", "Saskatoon");     /* direct alternate route */
-    connectCities("Calgary", "Regina");
-    connectCities("Edmonton", "Saskatoon");
-    connectCities("Saskatoon", "Regina");
-    connectCities("Regina", "Winnipeg");
-    connectCities("Winnipeg", "Thunder Bay");
-    connectCities("Thunder Bay", "Sudbury");
-    connectCities("Sudbury", "Toronto");
-    connectCities("Sudbury", "Ottawa");         /* direct alternate route */
-    connectCities("Toronto", "Ottawa");
-    connectCities("Toronto", "Montreal");       /* direct alternate route */
-    connectCities("Ottawa", "Montreal");
-    connectCities("Montreal", "Quebec City");
-    connectCities("Quebec City", "Fredericton");
-    connectCities("Fredericton", "Moncton");
-    connectCities("Fredericton", "Halifax");    /* direct alternate route */
-    connectCities("Moncton", "Halifax");
-}
-
 void freeGraph(void) {
     for (int i = 0; i < cityCount; i++) {
         Edge *edge = cities[i].connections;
@@ -565,9 +496,7 @@ void freeGraph(void) {
     }
 }
 
-/***********************
-       DISPLAY GRAPH
-************************/
+/* DISPLAY GRAPH */
 
 void printGraph(void) {
     printf("\nCanadian City Graph\n");
@@ -591,9 +520,7 @@ void printGraph(void) {
     }
 }
 
-/***********************
-       SHARED HELPERS
-************************/
+/* SHARED HELPERS */
 
 /* Reset the fields used by Dijkstra/A* before a fresh run. (BFS/DFS
  * keep their own local state and never need this.) */
@@ -620,9 +547,7 @@ void printPath(City *destination) {
     printf("%s", destination->name);
 }
 
-/***********************
-       BINARY MIN-HEAP (lazy deletion)
-************************/
+/* BINARY MIN-HEAP (lazy deletion) */
 
 /*
  * A small binary min-heap keyed on `priority`, storing city indices.
@@ -724,9 +649,8 @@ int heapPop(MinHeap *h, int *cityIdxOut) {
     return 1;
 }
 
-/***********************
-       BFS  (unweighted)
-************************/
+
+/* BFS  (unweighted) */
 
 /* Breadth-first search from start to goal. Finds the path with the
  * fewest hops (edges), ignoring distance weights. Fills `path` with
@@ -826,9 +750,7 @@ void runBFS(City *start, City *goal) {
     free(path);
 }
 
-/***********************
-       DFS  (unweighted)
-************************/
+/* DFS  (unweighted) */
 
 /* Depth-first search from start to goal, recursive. Finds *a* path
  * (not guaranteed shortest). Returns 1 if goal is found, 0 otherwise.
@@ -891,9 +813,7 @@ void runDFS(City *start, City *goal) {
     free(path);
 }
 
-/***********************
-       DIJKSTRA
-************************/
+/* DIJKSTRA */
 
 /* Runs Dijkstra from start to goal using a binary min-heap
   O((V+E) log V). Returns the number of cities visited
@@ -957,9 +877,7 @@ void printDijkstraResult(City *start, City *end, int explored) {
     printf("Cities explored: %d\n", explored);
 }
 
-/***********************
-          A*
-************************/
+/* A* Algorithm */
 
 double heuristic(City *current, City *goal) {
     return haversine(current->latitude, current->longitude,
@@ -1069,9 +987,7 @@ void compareAlgorithms(double dijkstraDistance, int dijkstraNodes,
     }
 }
 
-/***********************
-       MENU / INPUT HELPERS
-************************/
+/* MENU / INPUT HELPERS */
 
 /* Prompts for a city name until a valid one is entered. */
 City *promptForCity(const char *prompt) {
@@ -1118,21 +1034,17 @@ void printMenu(void) {
     printf("Choice: ");
 }
 
-/***********************
-          MAIN
-************************/
-
+/* MAIN */
 int main(void) {
     if (!loadCitiesFromCSV()) {
-        printf("Warning: could not find/read canadacities.csv in any known "
-               "location.\nFalling back to a small built-in dataset of 17 cities.\n");
-        buildCanadianCitiesFallback();
+        printf("Error: could not find/read canadacities.csv in any known location.\n");
+        return 1;
     }
 
     if (!loadEdgesFromCSV()) {
-        printf("Warning: could not find/read canada_edges.csv in any known "
-               "location.\nFalling back to a small built-in road list.\n");
-        buildGraphFallback();
+        printf("Error: could not find/read canada_edges.csv in any known location.\n");
+        free(cities);
+        return 1;
     }
 
     char buffer[32];

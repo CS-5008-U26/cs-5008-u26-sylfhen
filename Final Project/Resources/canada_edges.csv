@@ -1,0 +1,23 @@
+city1,city2
+Vancouver,Victoria
+Vancouver,Kelowna
+Vancouver,Calgary
+Kelowna,Calgary
+Calgary,Edmonton
+Calgary,Saskatoon
+Calgary,Regina
+Edmonton,Saskatoon
+Saskatoon,Regina
+Regina,Winnipeg
+Winnipeg,Thunder Bay
+Thunder Bay,Sudbury
+Sudbury,Toronto
+Sudbury,Ottawa
+Toronto,Ottawa
+Toronto,Montreal
+Ottawa,Montreal
+Montreal,Quebec City
+Quebec City,Fredericton
+Fredericton,Moncton
+Fredericton,Halifax
+Moncton,Halifax

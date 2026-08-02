@@ -1,3 +1,4 @@
+
 /*
  * canada_routes.c
  *
@@ -191,7 +192,6 @@ int connectCities(const char *city1, const char *city2) {
     return 1;
 }
 
-
 /* CSV LOADING */
 /* Strip surrounding double-quotes from a field string, in place. */
 static void stripEnclosingQuotes(char *field) {
@@ -245,6 +245,16 @@ static void killNewline(char *str) {
     if (len > 0 && str[len - 1] == '\r') str[--len] = '\0';
 }
 
+
+static void flushStdinLine(const char *buffer) {
+    if (strchr(buffer, '\n') == NULL) {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF) {
+            /* discard leftover characters from the same line */
+        }
+    }
+}
+
 /* Parses a decimal number from `s`, failing if `s` is empty or has
  * any trailing non-numeric junk, rather than silently returning 0
  * the way atof() would. */
@@ -291,7 +301,13 @@ int parseCityLine(char *line, char *nameOut, double *latOut, double *lngOut) {
 }
 
 /* Pass 1 of the two-pass loader: counts how many data lines in the
- * already-open file parse as valid cities */
+ * already-open file parse as valid cities, WITHOUT storing anything.
+ * This lets loadCitiesFromCSV() allocate the `cities` array at exactly
+ * the right size before any city is stored, so pass 2 never needs to
+ * grow/realloc the array - which matters because once real cities
+ * (and later, edges) start pointing at array slots, a realloc that
+ * moves the block would silently invalidate every pointer already
+ * handed out. */
 static int countValidCityLines(FILE *fp) {
     char  *buffer   = NULL;
     size_t bufCap   = 0;
@@ -337,7 +353,14 @@ static FILE *openCityCSV(void) {
     return NULL;
 }
 
-
+/*
+ * Loads cities from canadacities.csv using a two-pass approach:
+ *   Pass 1 (countValidCityLines): count valid data rows.
+ *   Pass 2: allocate `cities` at exactly that size, rewind, and fill
+ *           it in via addCity().
+ * Returns 1 on success (cityCount > 0), 0 if the file couldn't be
+ * found/opened or contained no valid rows
+ */
 int loadCitiesFromCSV(void) {
     FILE *fp = openCityCSV();
     if (fp == NULL) {
@@ -382,7 +405,7 @@ int loadCitiesFromCSV(void) {
     return cityCount > 0;
 }
 
-/* EDGE (ROAD) CSV LOADING */
+/* CSV LOADING FOR EDGE dataset*/
 
 /*
  * Parses one edge CSV line, expecting the format:
@@ -468,7 +491,7 @@ int loadEdgesFromCSV(void) {
     printf("Loaded %d road connections from canada_edges.csv\n", edgesConnected);
     return edgesConnected > 0;
 }
-
+/* GRAPH CLEANUP */
 void freeGraph(void) {
     for (int i = 0; i < cityCount; i++) {
         Edge *edge = cities[i].connections;
@@ -482,9 +505,8 @@ void freeGraph(void) {
 }
 
 /* DISPLAY GRAPH */
-/* Prints the graph in a human-readable form, showing each city and
- * its outgoing edges. Only cities with at least one connection are
- * shown. */
+/* Prints the graph in a human-readable format, showing each city
+ * and its outgoing edges. */
 void printGraph(void) {
     printf("\nCanadian City Graph\n");
     printf("====================\n\n");
@@ -507,8 +529,7 @@ void printGraph(void) {
     }
 }
 
-
-/* SHARED HELPERS */
+/* SHARED HELPER FUNCTIONS */
 
 /* Reset the fields used by Dijkstra/A* before a fresh run. (BFS/DFS
  * keep their own local state and never need this.) */
@@ -535,7 +556,7 @@ void printPath(City *destination) {
     printf("%s", destination->name);
 }
 
-/* BINARY MIN-HEAP (lazy deletion)*/
+/* BINARY MIN-HEAP */
 
 /*
  * A small binary min-heap keyed on `priority`, storing city indices.
@@ -552,7 +573,7 @@ typedef struct {
     int size;
     int capacity;
 } MinHeap;
-/* Initializes a min-heap with the given capacity hint. */
+/* Initializes a min-heap with an initial capacity hint. */
 void heapInit(MinHeap *h, int capacityHint) {
     h->capacity = (capacityHint > 0) ? capacityHint : 16;
     h->data = malloc((size_t)h->capacity * sizeof(HeapEntry));
@@ -569,13 +590,14 @@ void heapFree(MinHeap *h) {
     h->size = 0;
     h->capacity = 0;
 }
-/* Swaps two heap entries. */
+/* Swaps two entries in the heap. */
 static void heapSwap(HeapEntry *a, HeapEntry *b) {
     HeapEntry tmp = *a;
     *a = *b;
     *b = tmp;
 }
-/* Sifts an entry up the heap until the min-heap property is restored. */
+/* Sifts the entry at `idx` up the heap until the min-heap property is
+ * restored. */
 static void heapSiftUp(MinHeap *h, int idx) {
     while (idx > 0) {
         int parent = (idx - 1) / 2;
@@ -586,7 +608,8 @@ static void heapSiftUp(MinHeap *h, int idx) {
         idx = parent;
     }
 }
-/* Sifts an entry down the heap until the min-heap property is restored. */
+/* Sifts the entry at `idx` down the heap until the min-heap property is
+ * restored. */
 static void heapSiftDown(MinHeap *h, int idx) {
     while (1) {
         int left = 2 * idx + 1;
@@ -637,7 +660,7 @@ int heapPop(MinHeap *h, int *cityIdxOut) {
     return 1;
 }
 
-/* BFS  (unweighted) */
+/* BFS unweighted */
 
 /* Breadth-first search from start to goal. Finds the path with the
  * fewest hops (edges), ignoring distance weights. Fills `path` with
@@ -709,7 +732,8 @@ int bfs(City *start, City *goal, int path[], int *citiesExplored) {
     free(queue);
     return len; /* -1 if unreachable */
 }
-/* Runs BFS from start to goal, printing the result. */
+/* Runs BFS from start to goal, printing the path found (if any) and
+ * the number of cities explored. */
 void runBFS(City *start, City *goal) {
     int *path = malloc((size_t)cityCount * sizeof(int));
     if (path == NULL) {
@@ -737,7 +761,7 @@ void runBFS(City *start, City *goal) {
     free(path);
 }
 
-/* DFS  (unweighted) */
+/* DFS unweighted */
 
 /* Depth-first search from start to goal, recursive. Finds *a* path
  * (not guaranteed shortest). Returns 1 if goal is found, 0 otherwise.
@@ -769,7 +793,8 @@ int dfsHelper(City *current, City *goal, int visited[], int path[],
     (*pathLen)--;
     return 0;
 }
-/* Runs DFS from start to goal, printing the result. */
+/* Runs DFS from start to goal, printing the path found (if any) and
+ * the number of cities explored. */
 void runDFS(City *start, City *goal) {
     int *visited = calloc((size_t)cityCount, sizeof(int));
     int *path    = malloc((size_t)cityCount * sizeof(int));
@@ -801,7 +826,6 @@ void runDFS(City *start, City *goal) {
 }
 
 /* DIJKSTRA */
-
 /* Runs Dijkstra from start to goal using a binary min-heap
   O((V+E) log V). Returns the number of cities visited
  * (settled) by the time the goal is reached. The shortest distance
@@ -847,7 +871,8 @@ int dijkstra(City *start, City *goal) {
     heapFree(&heap);
     return explored;
 }
-
+/* Prints the results of a Dijkstra run, including the route, total
+ * distance, and number of cities explored. */
 void printDijkstraResult(City *start, City *end, int explored) {
     printf("\n============================\n");
     printf("DIJKSTRA RESULTS\n");
@@ -864,8 +889,8 @@ void printDijkstraResult(City *start, City *end, int explored) {
     printf("Cities explored: %d\n", explored);
 }
 
-/* A* Algorithm*/
-/* Straight-line distance heuristic (Haversine) from current to goal. */
+/* A* algorithm */
+/* Straight-line distance heuristic (Haversine) for A*. */
 double heuristic(City *current, City *goal) {
     return haversine(current->latitude, current->longitude,
                       goal->latitude, goal->longitude);
@@ -875,7 +900,8 @@ double heuristic(City *current, City *goal) {
  * heuristic to goal, using the same binary min-heap as Dijkstra (keyed
  * on f(n) = g(n) + h(n) instead of just g(n)). Returns the number of
  * cities visited (settled) by the time the goal is reached. The
- * shortest distance ends up in goal->distance */
+ * shortest distance ends up in goal->distance (the real path cost,
+ * not the f-score). */
 int aStar(City *start, City *goal) {
     resetWeightedState();
     int explored = 0;
@@ -938,8 +964,10 @@ void printAStarResult(City *start, City *end, int explored) {
     printf("Cities explored: %d\n", explored);
 }
 
-/* COMPARISON SECTION */
-
+/* COMPARISONS */
+/* Compares the results of Dijkstra and A* on the same start/goal pair,
+ * printing both distances and cities explored, and a short summary of
+ * how they differ. */
 void compareAlgorithms(double dijkstraDistance, int dijkstraNodes,
                         double aStarDistance, int aStarNodes) {
     printf("\n============================\n");
@@ -983,6 +1011,7 @@ City *promptForCity(const char *prompt) {
         if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
             return NULL; /* EOF */
         }
+        flushStdinLine(buffer);
         killNewline(buffer);
         city = findCity(buffer);
         if (city == NULL) {
@@ -1091,7 +1120,7 @@ void runBFSvsDFS(City *start, City *goal) {
                "(not guaranteed in general).\n");
     }
 }
-
+/* MENU */
 void printMenu(void) {
     printf("\n==================== MENU ====================\n");
     printf(" 1. Print the full city graph\n");
@@ -1106,9 +1135,9 @@ void printMenu(void) {
     printf("Choice: ");
 }
 
-/* Main program */
-/* Loads the city and edge CSVs, then enters a menu loop until the user
- * chooses to exit. */
+/* MAIN Programme */
+/* Loads the city and edge data, then enters a menu loop until the
+ * user chooses to exit. */
 int main(void) {
     if (!loadCitiesFromCSV()) {
         printf("Error: could not find/read canadacities.csv in any known location.\n");
@@ -1133,8 +1162,11 @@ int main(void) {
         if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
             break; /* EOF on stdin */
         }
+        flushStdinLine(buffer);
         killNewline(buffer);
-        int choice = atoi(buffer);
+        char *endptr;
+        long choiceLong = strtol(buffer, &endptr, 10);
+        int choice = (endptr == buffer || *endptr != '\0') ? -1 : (int)choiceLong;
 
         City *start;
         City *goal;

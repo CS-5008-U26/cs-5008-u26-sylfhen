@@ -481,9 +481,10 @@ void freeGraph(void) {
     }
 }
 
-
 /* DISPLAY GRAPH */
-
+/* Prints the graph in a human-readable form, showing each city and
+ * its outgoing edges. Only cities with at least one connection are
+ * shown. */
 void printGraph(void) {
     printf("\nCanadian City Graph\n");
     printf("====================\n\n");
@@ -534,9 +535,7 @@ void printPath(City *destination) {
     printf("%s", destination->name);
 }
 
-/***********************
-       BINARY MIN-HEAP (lazy deletion)
-************************/
+/* BINARY MIN-HEAP (lazy deletion)*/
 
 /*
  * A small binary min-heap keyed on `priority`, storing city indices.
@@ -553,7 +552,7 @@ typedef struct {
     int size;
     int capacity;
 } MinHeap;
-
+/* Initializes a min-heap with the given capacity hint. */
 void heapInit(MinHeap *h, int capacityHint) {
     h->capacity = (capacityHint > 0) ? capacityHint : 16;
     h->data = malloc((size_t)h->capacity * sizeof(HeapEntry));
@@ -570,13 +569,13 @@ void heapFree(MinHeap *h) {
     h->size = 0;
     h->capacity = 0;
 }
-
+/* Swaps two heap entries. */
 static void heapSwap(HeapEntry *a, HeapEntry *b) {
     HeapEntry tmp = *a;
     *a = *b;
     *b = tmp;
 }
-
+/* Sifts an entry up the heap until the min-heap property is restored. */
 static void heapSiftUp(MinHeap *h, int idx) {
     while (idx > 0) {
         int parent = (idx - 1) / 2;
@@ -587,7 +586,7 @@ static void heapSiftUp(MinHeap *h, int idx) {
         idx = parent;
     }
 }
-
+/* Sifts an entry down the heap until the min-heap property is restored. */
 static void heapSiftDown(MinHeap *h, int idx) {
     while (1) {
         int left = 2 * idx + 1;
@@ -607,7 +606,7 @@ static void heapSiftDown(MinHeap *h, int idx) {
         idx = smallest;
     }
 }
-
+/* Pushes a new entry onto the heap, growing it if necessary. */
 void heapPush(MinHeap *h, double priority, int cityIdx) {
     if (h->size == h->capacity) {
         int newCapacity = h->capacity * 2;
@@ -710,7 +709,7 @@ int bfs(City *start, City *goal, int path[], int *citiesExplored) {
     free(queue);
     return len; /* -1 if unreachable */
 }
-
+/* Runs BFS from start to goal, printing the result. */
 void runBFS(City *start, City *goal) {
     int *path = malloc((size_t)cityCount * sizeof(int));
     if (path == NULL) {
@@ -770,7 +769,7 @@ int dfsHelper(City *current, City *goal, int visited[], int path[],
     (*pathLen)--;
     return 0;
 }
-
+/* Runs DFS from start to goal, printing the result. */
 void runDFS(City *start, City *goal) {
     int *visited = calloc((size_t)cityCount, sizeof(int));
     int *path    = malloc((size_t)cityCount * sizeof(int));
@@ -866,7 +865,7 @@ void printDijkstraResult(City *start, City *end, int explored) {
 }
 
 /* A* Algorithm*/
-
+/* Straight-line distance heuristic (Haversine) from current to goal. */
 double heuristic(City *current, City *goal) {
     return haversine(current->latitude, current->longitude,
                       goal->latitude, goal->longitude);
@@ -1107,10 +1106,9 @@ void printMenu(void) {
     printf("Choice: ");
 }
 
-/***********************
-          MAIN
-************************/
-
+/* Main program */
+/* Loads the city and edge CSVs, then enters a menu loop until the user
+ * chooses to exit. */
 int main(void) {
     if (!loadCitiesFromCSV()) {
         printf("Error: could not find/read canadacities.csv in any known location.\n");

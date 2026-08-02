@@ -3,10 +3,15 @@
  *
  * FINAL PROJECT: Finding Shortest Routes Between Major Canadian Cities
  *                Using Graph Algorithms
+ *
+ * Cities are loaded from Resources/canadacities.csv (a simplemaps-style
+ * CSV with columns: city,city_ascii,province_id,province_name,lat,lng,
+ * population,...). If that file can't be found, the program falls back
+ * to a small built-in dataset of 17 cities so it always runs.
  */
 
 #define _POSIX_C_SOURCE 200809L  /* for strcasecmp and getline */
-
+/*Standard Library includes*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,21 +19,20 @@
 #include <math.h>
 #include <float.h>
 
-/***********************
-       CONSTANTS
-************************/
 
+/* Some compilers don't define M_PI in math.h, so define it here if
+ * it's missing. */
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
+/* Maximum length of a city name, including NUL terminator. */
 #define MAX_NAME_LEN  50
 #define MAX_FIELD_LEN 256
 #define EARTH_RADIUS  6371.0   /* km */
 #define INF           DBL_MAX  /* "infinite" distance, as a double */
 
-
-
+/* Forward declaration so Edge can point to City, and City can point
+ * to Edge. */
 typedef struct City City;
 
 /* One edge in an adjacency list */
@@ -54,24 +58,18 @@ struct City {
     City  *previous;
 };
 
-/* Cities live in a dynamically-sized array 
-cityCapacity is the allocated size; cityCount is how
- * many slots are actually in use. */
+/* Cities live in a dynamically-sized array
+  cityCapacity is the allocated size; cityCount is how
+ * many slots are actually in use.
+ */
 City *cities       = NULL;
 int   cityCount    = 0;
 int   cityCapacity = 0;
 
-/***********************
-       CITY CREATION
-************************/
 
-/* Adds a city, growing the backing array (via realloc, doubling) if
- * needed. Safe to call repeatedly during loading, per the invariant
- * above. When loadCitiesFromCSV() is used, cityCapacity is set to the
- * exact final count up front (via the two-pass approach below), so in
- * practice this growth path is never actually taken there - it only
- * fires for the small hardcoded fallback dataset, where the final
- * count isn't known ahead of time. */
+/* Adds a new city to the cities[] array, growing it if necessary.
+ * The name is copied into the City struct, so the caller can free
+ * its own copy of the string after calling this. */
 void addCity(const char *name, double latitude, double longitude) {
     if (cityCount >= cityCapacity) {
         int newCapacity = (cityCapacity == 0) ? 16 : cityCapacity * 2;
@@ -97,7 +95,7 @@ void addCity(const char *name, double latitude, double longitude) {
     c->previous    = NULL;
     cityCount++;
 }
-
+/* Finds a city by name, case-insensitive. Returns NULL if not found. */
 City *findCity(const char *name) {
     for (int i = 0; i < cityCount; i++) {
         if (strcasecmp(cities[i].name, name) == 0) {
@@ -115,10 +113,7 @@ int cityIndex(City *c) {
     return (int)(c - cities);
 }
 
-/***********************
-       HAVERSINE FORMULA
-************************/
-
+/* HAVERSINE FORMULA */
 double degreesToRadians(double degrees) {
     return degrees * M_PI / 180.0;
 }
@@ -137,10 +132,10 @@ double haversine(double lat1, double lon1, double lat2, double lon2) {
     return EARTH_RADIUS * c;
 }
 
-/***********************
-       GRAPH EDGES
-************************/
+/* GRAPH EDGES */
 
+/* Adds a one-way edge from `from` to `to` with the given distance.
+ * Used by connectCities() to add both directions of a two-way road. */
 void addEdge(City *from, City *to, double distance) {
     Edge *newEdge = malloc(sizeof(Edge));
     if (newEdge == NULL) {
@@ -168,26 +163,29 @@ int edgeExists(City *from, City *to) {
 /* Adds a two-way road between two named cities. Distance is computed
  * automatically from their coordinates via Haversine, which also
  * guarantees the A* heuristic (straight-line distance to goal) never
- * overestimates any edge's real cost - i.e. it stays admissible. */
-void connectCities(const char *city1, const char *city2) {
+ * overestimates any edge's real cost - i.e. it stays admissible.
+ * Returns 1 if the edge was added, 0 if it was skipped (unknown city,
+ * self-loop, or duplicate) - used by loadEdgesFromCSV() to report how
+ * many rows actually became roads. */
+int connectCities(const char *city1, const char *city2) {
     City *a = findCity(city1);
     City *b = findCity(city2);
 
     if (a == NULL || b == NULL) {
         printf("Warning: could not connect \"%s\" and \"%s\" "
                "(city not found)\n", city1, city2);
-        return;
+        return 0;
     }
 
     if (a == b) {
         printf("Warning: ignoring self-loop for \"%s\"\n", city1);
-        return;
+        return 0;
     }
 
     if (edgeExists(a, b)) {
         printf("Warning: \"%s\" <-> \"%s\" already connected, skipping duplicate\n",
                city1, city2);
-        return;
+        return 0;
     }
 
     double distance = haversine(a->latitude, a->longitude,
@@ -195,6 +193,7 @@ void connectCities(const char *city1, const char *city2) {
 
     addEdge(a, b, distance);
     addEdge(b, a, distance);
+    return 1;
 }
 
 /***********************
@@ -405,6 +404,96 @@ int loadCitiesFromCSV(void) {
 }
 
 /***********************
+       EDGE (ROAD) CSV LOADING
+************************/
+
+/*
+ * Parses one edge CSV line, expecting the format:
+ *   city1,city2
+ * (a header row "city1,city2" is skipped by the caller, same as the
+ * city CSV). Returns 1 on success, 0 if either field is empty.
+ */
+int parseEdgeLine(char *line, char *city1Out, char *city2Out) {
+    if (line == NULL || line[0] == '\0') return 0;
+
+    char  field[MAX_FIELD_LEN];
+    char *cursor = line;
+
+    cursor = getNextField(cursor, field, sizeof field); /* city1 */
+    if (field[0] == '\0') return 0;
+    strncpy(city1Out, field, MAX_NAME_LEN - 1);
+    city1Out[MAX_NAME_LEN - 1] = '\0';
+
+    cursor = getNextField(cursor, field, sizeof field); /* city2 */
+    if (field[0] == '\0') return 0;
+    strncpy(city2Out, field, MAX_NAME_LEN - 1);
+    city2Out[MAX_NAME_LEN - 1] = '\0';
+
+    return 1;
+}
+
+/* Tries a short list of likely relative locations for the edges CSV,
+ * mirroring openCityCSV() above. */
+static FILE *openEdgesCSV(void) {
+    const char *candidatePaths[] = {
+        "Resources/canada_edges.csv",
+        "../Resources/canada_edges.csv",
+        "../../Resources/canada_edges.csv",
+        "Final Project/Resources/canada_edges.csv",
+        "canada_edges.csv"
+    };
+    int numCandidates = (int)(sizeof(candidatePaths) / sizeof(candidatePaths[0]));
+
+    for (int i = 0; i < numCandidates; i++) {
+        FILE *file = fopen(candidatePaths[i], "r");
+        if (file != NULL) {
+            return file;
+        }
+    }
+    return NULL;
+}
+
+/*
+ * Loads the road network from canada_edges.csv - one pass is enough
+ * here (unlike the city loader) because edges don't need to be
+ * pre-allocated in a contiguous array; each one is just a separate
+ * malloc'd linked-list node added via connectCities(). Returns 1 if
+ * at least one edge was successfully connected, 0 if the file
+ * couldn't be found/opened or contained no usable rows (caller should
+ * fall back to the built-in road list in that case).
+ */
+int loadEdgesFromCSV(void) {
+    FILE *fp = openEdgesCSV();
+    if (fp == NULL) {
+        return 0;
+    }
+
+    char  *buffer = NULL;
+    size_t bufCap = 0;
+
+    if (getline(&buffer, &bufCap, fp) == -1) { /* header line */
+        free(buffer);
+        fclose(fp);
+        return 0;
+    }
+
+    int    edgesConnected = 0;
+    char   city1[MAX_NAME_LEN], city2[MAX_NAME_LEN];
+    while (getline(&buffer, &bufCap, fp) != -1) {
+        killNewline(buffer);
+        if (parseEdgeLine(buffer, city1, city2)) {
+            edgesConnected += connectCities(city1, city2);
+        }
+    }
+
+    free(buffer);
+    fclose(fp);
+
+    printf("Loaded %d road connections from canada_edges.csv\n", edgesConnected);
+    return edgesConnected > 0;
+}
+
+/***********************
        FALLBACK DATASET
 ************************/
 
@@ -432,21 +521,14 @@ void buildCanadianCitiesFallback(void) {
 }
 
 /***********************
-       BUILD GRAPH
+       BUILD GRAPH (fallback only)
 ************************/
 
-/* Connections approximate major highway routes. A few redundant links
- * (e.g. a direct Vancouver-Calgary road, and a Toronto/Ottawa/Montreal
- * triangle) are included on purpose: with a plain chain graph, Dijkstra
- * and A* would always explore the exact same cities, which makes the
- * "does A* explore fewer cities?" comparison meaningless. Adding a
- * couple of alternate routes gives A*'s heuristic something to prune.
- *
- * NOTE: this only connects cities by these specific names. If the CSV
- * dataset is loaded, most of the other (thousands of) cities in it
- * will simply have no edges at all - that's expected; they're just not
- * part of this particular highway network. */
-void buildGraph(void) {
+/* Used only if canada_edges.csv can't be found - the normal path is
+ * loadEdgesFromCSV() above. This hardcoded list is just a backup so
+ * the program still has a usable road network if the data file is
+ * missing, mirroring buildCanadianCitiesFallback(). */
+void buildGraphFallback(void) {
     connectCities("Vancouver", "Victoria");
     connectCities("Vancouver", "Kelowna");
     connectCities("Vancouver", "Calgary");     /* direct alternate route */
@@ -630,8 +712,7 @@ void heapPush(MinHeap *h, double priority, int cityIdx) {
 }
 
 /* Pops the minimum-priority entry into *cityIdxOut. Returns 1 on
- * success, 0 if the heap is empty. Does NOT check for staleness -
- * that's the caller's job (check cities[idx].visited). */
+ * success, 0 if the heap is empty. */
 int heapPop(MinHeap *h, int *cityIdxOut) {
     if (h->size == 0) {
         return 0;
@@ -753,7 +834,8 @@ void runBFS(City *start, City *goal) {
  * (not guaranteed shortest). Returns 1 if goal is found, 0 otherwise.
  * `path` accumulates the cities visited on the current recursion
  * branch; `*pathLen` tracks how many are currently on it;
- * `*citiesExplored` counts every city visited during search. */
+ * `*citiesExplored` counts every city visited during search.
+ */
 int dfsHelper(City *current, City *goal, int visited[], int path[],
               int *pathLen, int *citiesExplored) {
     int currentIdx = cityIndex(current);
@@ -813,9 +895,8 @@ void runDFS(City *start, City *goal) {
        DIJKSTRA
 ************************/
 
-/* Runs Dijkstra from start to goal using a binary min-heap (see above)
- * instead of an O(V) linear scan, bringing the algorithm from O(V^2)
- * down to O((V+E) log V). Returns the number of cities visited
+/* Runs Dijkstra from start to goal using a binary min-heap
+  O((V+E) log V). Returns the number of cities visited
  * (settled) by the time the goal is reached. The shortest distance
  * ends up in goal->distance, and the route can be printed with
  * printPath(goal). */
@@ -1047,7 +1128,12 @@ int main(void) {
                "location.\nFalling back to a small built-in dataset of 17 cities.\n");
         buildCanadianCitiesFallback();
     }
-    buildGraph();
+
+    if (!loadEdgesFromCSV()) {
+        printf("Warning: could not find/read canada_edges.csv in any known "
+               "location.\nFalling back to a small built-in road list.\n");
+        buildGraphFallback();
+    }
 
     char buffer[32];
     int running = 1;
